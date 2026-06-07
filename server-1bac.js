@@ -801,6 +801,15 @@ function quizWindowLabel() {
 }
 
 function getQuizWindowStatus(date = new Date()) {
+  if (process.env.QUIZ_TEST_MODE === 'open') {
+    const remainingSeconds = Number(process.env.QUIZ_TEST_REMAINING_SECONDS) || 1800;
+    return {
+      state: 'open',
+      remainingSeconds,
+      message: `Test mode: the quiz is open for ${Math.round(remainingSeconds / 60)} minutes.`
+    };
+  }
+
   const now = getZonedDateTimeParts(date);
   const targetDateKey = getQuizWindowDateKey();
   const startSeconds = (QUIZ_WINDOW.startHour * 60 + QUIZ_WINDOW.startMinute) * 60;

@@ -4,7 +4,9 @@
   "description": "Scheduled passive voice quiz platform for 1 BAC students",
   "main": "server-1bac.js",
   "scripts": {
-    "start": "node server-1bac.js"
+    "start": "node server-1bac.js",
+    "test:open": "QUIZ_TEST_MODE=open node server-1bac.js",
+    "test:smoke": "node scripts/smoke-test.mjs"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -13,5 +15,8 @@
     "express": "^4.18.2",
     "socket.io": "^4.7.4",
     "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.3"
   }
 }

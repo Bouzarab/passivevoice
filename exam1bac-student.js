@@ -312,6 +312,11 @@ function armProtection() {
   document.body.classList.add('protected');
 }
 
+function disarmProtection() {
+  protectionArmed = false;
+  document.body.classList.remove('protected');
+}
+
 // ─── Registration form ────────────────────────────────────────────────────────
 const joinForm = document.getElementById('join-form');
 const joinBtn  = document.getElementById('join-btn');
@@ -486,6 +491,7 @@ socket.on('game:rankings', ({ leaderboard }) => {
 
 socket.on('game:finished', ({ leaderboard }) => {
   if (removed || !playerToken) return;
+  disarmProtection();
 
   // Find the student's own entry for the summary
   const me = leaderboard.find(p => p.id === playerId);
