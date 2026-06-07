@@ -10,13 +10,13 @@ let studentClass = '';
 let playerId = '';
 let playerToken = '';
 let myScore = 0;
-let totalQuestions = 20;
+let totalQuestions = 10;
 let protectionArmed = false;
 let violationSent = false;
 let removed = false;
 let translationClear = true;
 let translationGateUpdating = false;
-const MAX_SCORE = 20;
+const MAX_SCORE = 5;
 
 // ─── Screen management ────────────────────────────────────────────────────────
 const screens = {
@@ -369,7 +369,7 @@ joinForm.addEventListener('submit', (e) => {
   // Switch to waiting screen immediately — no need to stare at the form
   setText('waiting-name', name);
   setText('waiting-detail', `${cls} · #${number}`);
-  setText('waiting-status', 'Your registration is being confirmed…');
+  setText('waiting-status', 'Your registration is being confirmed...');
   showScreen('waiting');
 
   socket.emit('student:join', { name, number, studentClass: cls, translationOk: translationClear });
@@ -403,7 +403,7 @@ socket.on('student:joined', ({ id, token, name, number, studentClass: cls, score
   setText('result-name', name);
   setText('waiting-name', name);
   setText('waiting-detail', `${cls} · #${number}`);
-  setText('waiting-status', 'Waiting for the teacher to start the quiz…');
+  setText('waiting-status', 'Preparing your 10 random questions...');
 
   // Stay on the waiting screen (already showing), arm protection
   armProtection();
@@ -422,7 +422,7 @@ socket.on('student:resumed', ({ id, token, name, number, studentClass: cls, scor
   setText('result-name', name);
   setText('waiting-name', name);
   setText('waiting-detail', `${cls} · #${number}`);
-  setText('waiting-status', 'Connection restored. Waiting for the quiz...');
+  setText('waiting-status', 'Connection restored. Loading your quiz...');
   updateScore(score);
   removed = false;
   violationSent = false;

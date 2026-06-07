@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: common-core-quiz-live
+    name: 1bac-passive-voice-quiz
     env: node
     plan: free
     buildCommand: npm install

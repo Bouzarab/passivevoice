@@ -4,7 +4,7 @@ const socket = io();
 let currentTimeLimit = 40;
 let latestState = null;
 let showAnswerNames = false;
-const MAX_SCORE = 20;
+const MAX_SCORE = 5;
 
 // ─── Screen management ────────────────────────────────────────────────────────
 const screens = {
@@ -103,7 +103,10 @@ function renderPlayerList(containerId, players, mode) {
     meta.className = 'student-meta';
     const classNum = [player.studentClass, player.number ? `#${player.number}` : ''].filter(Boolean).join(' · ');
     const scoreStr = `${formatScore(player.score)} / ${MAX_SCORE}`;
-    const activeStatus = player.connectionStatus === 'reconnecting' ? 'Reconnecting...' : scoreStr;
+    const progressStr = player.quizStatus === 'finished'
+      ? `Finished · ${player.correctCount || 0}/${player.totalQuestions || 10} correct`
+      : `Question ${player.currentQuestionNumber || 1}/${player.totalQuestions || 10} · ${scoreStr}`;
+    const activeStatus = player.connectionStatus === 'reconnecting' ? 'Reconnecting...' : progressStr;
     meta.textContent = player.status === 'active'
       ? `${classNum} · ${activeStatus}`
       : `${classNum} · ${scoreStr} — ${player.status === 'allowed_back' ? 'can rejoin' : (player.removalReason || 'removed')}`;
@@ -163,8 +166,11 @@ function renderLeaderboard(containerId, leaderboard) {
     const detail = document.createElement('span');
     detail.className = 'small-text';
     const classMeta = [player.studentClass, player.number ? `#${player.number}` : ''].filter(Boolean).join(' · ');
+    const progressMeta = player.quizStatus === 'finished'
+      ? `Finished · ${player.correctCount || 0}/${player.totalQuestions || 10} correct`
+      : `Question ${player.currentQuestionNumber || 1}/${player.totalQuestions || 10}`;
     detail.textContent = player.status === 'active'
-      ? classMeta || 'Active'
+      ? [classMeta, progressMeta].filter(Boolean).join(' · ') || 'Active'
       : `${classMeta ? classMeta + ' · ' : ''}${player.removalReason || 'Removed'}`;
     nameWrap.append(nameEl, detail);
 
@@ -208,8 +214,8 @@ function renderAnswerNameLists(players) {
   const activeStudents = Object.values(players)
     .filter(p => p.status === 'active')
     .sort((a, b) => (a.studentClass || '').localeCompare(b.studentClass || '') || a.name.localeCompare(b.name));
-  const answered = activeStudents.filter(p => p.hasAnsweredCurrent);
-  const unanswered = activeStudents.filter(p => !p.hasAnsweredCurrent);
+  const answered = activeStudents.filter(p => p.quizStatus === 'finished');
+  const unanswered = activeStudents.filter(p => p.quizStatus !== 'finished');
 
   renderAnswerNameGroup('answered-student-list', answered, 'No answers yet.');
   renderAnswerNameGroup('unanswered-student-list', unanswered, 'Everyone answered.');
@@ -326,7 +332,12 @@ function applyTeacherState(state) {
   setText('removed-count', removedCount);
 
   const startBtn = document.getElementById('start-btn');
-  startBtn.disabled = activeCount < 1 || state.phase !== 'lobby';
+  if (startBtn) {
+    startBtn.disabled = true;
+    if (state.windowStatus?.state === 'open') startBtn.textContent = 'Window Open';
+    else if (state.windowStatus?.state === 'closed') startBtn.textContent = 'Window Closed';
+    else startBtn.textContent = 'Opens Automatically';
+  }
 
   renderPlayerList('lobby-student-list', players, 'active');
   renderPlayerList('lobby-removed-list', players, 'removed');

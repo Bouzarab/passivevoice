@@ -16,14 +16,23 @@ const io = new Server(server, {
 
 const PORT = process.env.PORT || 3000;
 const HOST = '0.0.0.0';
-const TOTAL_SCORE = 20;
-const QUIZ_QUESTION_COUNT = 20;
-const STANDARD_TIME = 40;
-const IMAGE_TIME = 35;
+const QUIZ_TITLE = '1 BAC Passive Voice Quiz';
+const TOTAL_SCORE = 5;
+const QUIZ_QUESTION_COUNT = 10;
+const STANDARD_TIME = 90;
 const DISCONNECT_GRACE_MS = 30000;
 
-const VALID_CLASSES = ['TCSF3', 'TCSF4', 'TCSF5'];
-const RESULT_REVEAL_MS = 4500;
+const VALID_CLASSES = ['1BACSH2', '1BACSE3', '1BACSE4'];
+const QUIZ_TIME_ZONE = 'Africa/Casablanca';
+const QUIZ_WINDOW = {
+  year: 2026,
+  month: 6,
+  day: 8,
+  startHour: 17,
+  startMinute: 0,
+  endHour: 17,
+  endMinute: 30
+};
 
 app.use((req, res, next) => {
   if (/\.(?:html|css|js)$/i.test(req.path)) {
@@ -33,15 +42,18 @@ app.use((req, res, next) => {
 });
 app.use(express.static(__dirname));
 
-app.get('/', (req, res) => res.redirect('/exam1bac-teacher.html'));
+app.get('/', (req, res) => res.redirect('/exam1bac-student.html'));
 app.get('/teacher', (req, res) => res.redirect('/exam1bac-teacher.html'));
 app.get('/student', (req, res) => res.redirect('/exam1bac-student.html'));
 
 app.get('/health', (req, res) => {
+  const windowStatus = getQuizWindowStatus();
   res.status(200).json({
     status: 'ok',
-    exam: 'common-core',
-    phase: gameState.phase,
+    exam: 'passive-voice-1bac',
+    title: QUIZ_TITLE,
+    phase: getTeacherPhase(),
+    windowStatus,
     activePlayers: getActivePlayers().length,
     totalPlayers: Object.keys(gameState.players).length
   });
@@ -93,9 +105,10 @@ app.get('/exam1bac/export-results', (req, res) => {
     }
 
     const score = Math.round(player.score * 100) / 100;
-    row.push(score, correctCount, player.status === 'active'
-      ? 'Active'
-      : (player.status === 'allowed_back' ? 'Allowed back' : 'Removed'));
+    const statusLabel = player.status !== 'active'
+      ? (player.status === 'allowed_back' ? 'Allowed back' : 'Removed')
+      : (player.quizStatus === 'finished' ? 'Finished' : 'In progress');
+    row.push(score, correctCount, statusLabel);
     rows.push(row);
   }
 
@@ -117,7 +130,7 @@ app.get('/exam1bac/export-results', (req, res) => {
 
   const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-  res.setHeader('Content-Disposition', 'attachment; filename="quiz-results.xlsx"');
+  res.setHeader('Content-Disposition', 'attachment; filename="passive-voice-results.xlsx"');
   res.send(buf);
 });
 
@@ -137,367 +150,563 @@ app.post('/exam1bac/violation', express.text({ type: '*/*' }), (req, res) => {
 
 // ─── Questions ───────────────────────────────────────────────────────────────
 const questionsRaw = [
-  // Section A - Jobs and occupations
+  // Present simple passive
   {
-    id: 'A1', section: 'Jobs and Occupations',
-    prompt: 'This person delivers letters. He is a:',
-    image: '/exam1bac-assets/common-core/job-postman.png',
-    imageAlt: 'A postman carrying letters',
-    options: ['postman', 'pilot', 'dentist'],
-    correctIndex: 0, timeLimit: IMAGE_TIME
-  },
-  {
-    id: 'A2', section: 'Jobs and Occupations',
-    prompt: 'This person flies planes. He is a:',
-    image: '/exam1bac-assets/common-core/job-pilot.png',
-    imageAlt: 'A pilot',
-    options: ['pilot', 'mechanic', 'carpenter'],
-    correctIndex: 0, timeLimit: IMAGE_TIME
-  },
-  {
-    id: 'A3', section: 'Jobs and Occupations',
-    prompt: 'This person works with wood. He is a:',
-    image: '/exam1bac-assets/common-core/job-carpenter.png',
-    imageAlt: 'A carpenter carrying wood',
-    options: ['carpenter', 'dentist', 'author'],
-    correctIndex: 0, timeLimit: IMAGE_TIME
-  },
-  {
-    id: 'A4', section: 'Jobs and Occupations',
-    prompt: 'This person looks after people\'s teeth. She is a:',
-    image: '/exam1bac-assets/common-core/job-dentist.png',
-    imageAlt: 'A dentist looking after teeth',
-    options: ['dentist', 'doctor', 'painter'],
-    correctIndex: 0, timeLimit: IMAGE_TIME
-  },
-  {
-    id: 'A5', section: 'Jobs and Occupations',
-    prompt: 'This person repairs cars. He is a:',
-    image: '/exam1bac-assets/common-core/job-mechanic.png',
-    imageAlt: 'A mechanic with tools',
-    options: ['mechanic', 'postman', 'gardener'],
-    correctIndex: 0, timeLimit: IMAGE_TIME
-  },
-  {
-    id: 'A6', section: 'Jobs and Occupations',
-    prompt: 'This person paints walls. He is a:',
-    image: '/exam1bac-assets/common-core/job-painter.png',
-    imageAlt: 'A painter holding a brush',
-    options: ['painter', 'bus driver', 'postman'],
-    correctIndex: 0, timeLimit: IMAGE_TIME
-  },
-  {
-    id: 'A7', section: 'Jobs and Occupations',
-    prompt: 'A gardener __________ plants.',
-    options: ['grows', 'drives', 'arrests'],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'A8', section: 'Jobs and Occupations',
-    prompt: 'A bus driver __________ a bus.',
-    options: ['drives', 'writes', 'looks after'],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'A9', section: 'Jobs and Occupations',
-    prompt: 'A police officer __________ criminals.',
-    options: ['arrests', 'grows', 'drives'],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'A10', section: 'Jobs and Occupations',
-    prompt: 'An author __________ books.',
-    options: ['writes', 'arrests', 'drives'],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'A11', section: 'Jobs and Occupations',
-    prompt: 'A doctor __________ sick people.',
-    options: ['helps', 'writes', 'grows'],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'A12', section: 'Jobs and Occupations',
-    prompt: 'A dentist looks after:',
-    options: ['people\'s teeth', 'a bus', 'plants'],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-
-  // Section B - Time prepositions
-  {
-    id: 'B1', section: 'Time Prepositions',
-    prompt: 'I get up early __________ the morning.',
-    options: ['in', 'on', 'at'],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'B2', section: 'Time Prepositions',
-    prompt: 'We have English __________ Monday.',
-    options: ['on', 'in', 'at'],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'B3', section: 'Time Prepositions',
-    prompt: 'The shop opens __________ noon.',
-    options: ['at', 'in', 'on'],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'B4', section: 'Time Prepositions',
-    prompt: 'My birthday is __________ April.',
-    options: ['in', 'on', 'at'],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'B5', section: 'Time Prepositions',
-    prompt: 'The test is __________ Friday.',
-    options: ['on', 'in', 'at'],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'B6', section: 'Time Prepositions',
-    prompt: 'The movie starts __________ 9:30.',
-    options: ['at', 'on', 'in'],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'B7', section: 'Time Prepositions',
-    prompt: 'We go to the beach __________ summer.',
-    options: ['in', 'on', 'at'],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'B8', section: 'Time Prepositions',
-    prompt: 'I visit my grandparents __________ the weekend.',
-    options: ['at', 'in', 'on'],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-
-  // Section C - Adverbs of frequency
-  {
-    id: 'C1', section: 'Adverbs of Frequency',
-    prompt: 'Put "always" in the right place.',
+    id: 'PV01', section: 'Passive Voice: Present Simple',
+    prompt: 'Choose the correct passive form: "People speak English in many countries."',
     options: [
-      'She is always happy.',
-      'She always is happy.',
-      'Always she is happy.'
+      'English is spoken in many countries.',
+      'English speaks in many countries.',
+      'English was spoken in many countries.',
+      'English is speak in many countries.'
     ],
     correctIndex: 0, timeLimit: STANDARD_TIME
   },
   {
-    id: 'C2', section: 'Adverbs of Frequency',
-    prompt: 'Put "never" in the right place.',
+    id: 'PV02', section: 'Passive Voice: Present Simple',
+    prompt: 'Choose the correct passive form: "Farmers grow olives in Morocco."',
     options: [
-      'He never drinks coffee.',
-      'He drinks never coffee.',
-      'Never he drinks coffee.'
+      'Olives are grown in Morocco.',
+      'Olives grow farmers in Morocco.',
+      'Olives is grown in Morocco.',
+      'Olives were grow in Morocco.'
     ],
     correctIndex: 0, timeLimit: STANDARD_TIME
   },
   {
-    id: 'C3', section: 'Adverbs of Frequency',
-    prompt: 'Put "often" in the right place.',
+    id: 'PV03', section: 'Passive Voice: Present Simple',
+    prompt: 'Choose the correct passive form: "The teacher checks the homework every day."',
     options: [
-      'Do you often play football?',
-      'Do often you play football?',
-      'Often do you play football?'
+      'The homework is checked every day.',
+      'The homework checks every day.',
+      'The homework was checked every day.',
+      'The homework is checking every day.'
     ],
     correctIndex: 0, timeLimit: STANDARD_TIME
   },
   {
-    id: 'C4', section: 'Adverbs of Frequency',
-    prompt: 'Put "ever" in the right place.',
+    id: 'PV04', section: 'Passive Voice: Present Simple',
+    prompt: 'Choose the correct passive form: "They clean the classrooms every morning."',
     options: [
-      'Are they ever late?',
-      'Are ever they late?',
-      'Ever are they late?'
+      'The classrooms are cleaned every morning.',
+      'The classrooms clean every morning.',
+      'The classrooms were cleaned every morning.',
+      'The classrooms are clean every morning.'
     ],
     correctIndex: 0, timeLimit: STANDARD_TIME
   },
   {
-    id: 'C5', section: 'Adverbs of Frequency',
-    prompt: 'Put "always" in the right place.',
+    id: 'PV05', section: 'Passive Voice: Present Simple',
+    prompt: 'Choose the correct passive form: "The company sells computers online."',
     options: [
-      'We always do our homework.',
-      'We do always our homework.',
-      'Always we do our homework.'
+      'Computers are sold online.',
+      'Computers sell online.',
+      'Computers are selling online.',
+      'Computers were sold online.'
     ],
     correctIndex: 0, timeLimit: STANDARD_TIME
   },
   {
-    id: 'C6', section: 'Adverbs of Frequency',
-    prompt: 'Put "never" in the right place.',
+    id: 'PV06', section: 'Passive Voice: Present Simple',
+    prompt: 'Choose the correct passive form: "Someone opens the gate at 8 o\'clock."',
     options: [
-      'I am never late.',
-      'I never am late.',
-      'Never I am late.'
+      'The gate is opened at 8 o\'clock.',
+      'The gate opened at 8 o\'clock.',
+      'The gate is opening at 8 o\'clock.',
+      'The gate was open at 8 o\'clock.'
     ],
     correctIndex: 0, timeLimit: STANDARD_TIME
   },
   {
-    id: 'C7', section: 'Adverbs of Frequency',
-    prompt: 'Put "often" in the right place.',
+    id: 'PV07', section: 'Passive Voice: Present Simple',
+    prompt: 'Choose the correct passive form: "Many students use smartphones."',
     options: [
-      'They often watch TV.',
-      'They watch often TV.',
-      'Often they watch TV.'
+      'Smartphones are used by many students.',
+      'Smartphones use many students.',
+      'Smartphones are using by many students.',
+      'Smartphones were used by many students.'
     ],
     correctIndex: 0, timeLimit: STANDARD_TIME
   },
   {
-    id: 'C8', section: 'Adverbs of Frequency',
-    prompt: 'Put "ever" in the right place.',
+    id: 'PV08', section: 'Passive Voice: Present Simple',
+    prompt: 'Choose the correct passive form: "The chef prepares lunch at noon."',
     options: [
-      'Does she ever cook dinner?',
-      'Does ever she cook dinner?',
-      'Ever does she cook dinner?'
+      'Lunch is prepared at noon.',
+      'Lunch prepares at noon.',
+      'Lunch was prepared at noon.',
+      'Lunch is prepare at noon.'
     ],
     correctIndex: 0, timeLimit: STANDARD_TIME
   },
   {
-    id: 'C9', section: 'Adverbs of Frequency',
-    prompt: 'Put "sometimes" in the right place.',
+    id: 'PV09', section: 'Passive Voice: Present Simple',
+    prompt: 'Choose the correct passive form: "People celebrate Eid in Morocco."',
     options: [
-      'He sometimes plays basketball.',
-      'He plays sometimes basketball.',
-      'Sometimes he plays basketball.'
+      'Eid is celebrated in Morocco.',
+      'Eid celebrates in Morocco.',
+      'Eid was celebrated in Morocco.',
+      'Eid is celebrating in Morocco.'
     ],
     correctIndex: 0, timeLimit: STANDARD_TIME
   },
   {
-    id: 'C10', section: 'Adverbs of Frequency',
-    prompt: 'Put "usually" in the right place.',
+    id: 'PV10', section: 'Passive Voice: Present Simple',
+    prompt: 'Choose the correct passive form: "They do not allow phones in the exam room."',
     options: [
-      'My sister usually walks to school.',
-      'My sister walks usually to school.',
-      'Usually my sister walks to school.'
+      'Phones are not allowed in the exam room.',
+      'Phones do not allow in the exam room.',
+      'Phones were not allowed in the exam room.',
+      'Phones are not allowing in the exam room.'
     ],
     correctIndex: 0, timeLimit: STANDARD_TIME
   },
 
-  // Section D - Some and any
+  // Past simple passive
   {
-    id: 'D1', section: 'Some / Any',
-    prompt: 'There are __________ apples in the kitchen.',
-    options: ['some', 'any'],
+    id: 'PV11', section: 'Passive Voice: Past Simple',
+    prompt: 'Choose the correct passive form: "Shakespeare wrote Hamlet."',
+    options: [
+      'Hamlet was written by Shakespeare.',
+      'Hamlet is written by Shakespeare.',
+      'Hamlet wrote Shakespeare.',
+      'Hamlet was wrote by Shakespeare.'
+    ],
     correctIndex: 0, timeLimit: STANDARD_TIME
   },
   {
-    id: 'D2', section: 'Some / Any',
-    prompt: 'There aren\'t __________ onions in the fridge.',
-    options: ['any', 'some'],
+    id: 'PV12', section: 'Passive Voice: Past Simple',
+    prompt: 'Choose the correct passive form: "The police arrested the thief yesterday."',
+    options: [
+      'The thief was arrested yesterday.',
+      'The thief arrested yesterday.',
+      'The thief is arrested yesterday.',
+      'The thief was arrest yesterday.'
+    ],
     correctIndex: 0, timeLimit: STANDARD_TIME
   },
   {
-    id: 'D3', section: 'Some / Any',
-    prompt: 'Can we buy __________ mayonnaise, please?',
-    options: ['some', 'any'],
+    id: 'PV13', section: 'Passive Voice: Past Simple',
+    prompt: 'Choose the correct passive form: "They built this bridge in 2010."',
+    options: [
+      'This bridge was built in 2010.',
+      'This bridge is built in 2010.',
+      'This bridge built in 2010.',
+      'This bridge was build in 2010.'
+    ],
     correctIndex: 0, timeLimit: STANDARD_TIME
   },
   {
-    id: 'D4', section: 'Some / Any',
-    prompt: 'I don\'t want __________ celery in my salad.',
-    options: ['any', 'some'],
+    id: 'PV14', section: 'Passive Voice: Past Simple',
+    prompt: 'Choose the correct passive form: "My father repaired the car."',
+    options: [
+      'The car was repaired by my father.',
+      'The car repaired my father.',
+      'The car is repaired by my father.',
+      'The car was repairing by my father.'
+    ],
     correctIndex: 0, timeLimit: STANDARD_TIME
   },
   {
-    id: 'D5', section: 'Some / Any',
-    prompt: 'Do we have __________ bananas?',
-    options: ['any', 'some'],
+    id: 'PV15', section: 'Passive Voice: Past Simple',
+    prompt: 'Choose the correct passive form: "Someone stole my bag last night."',
+    options: [
+      'My bag was stolen last night.',
+      'My bag stole last night.',
+      'My bag is stolen last night.',
+      'My bag was stole last night.'
+    ],
     correctIndex: 0, timeLimit: STANDARD_TIME
   },
   {
-    id: 'D6', section: 'Some / Any',
-    prompt: 'Let\'s put __________ apples in the salad.',
-    options: ['some', 'any'],
+    id: 'PV16', section: 'Passive Voice: Past Simple',
+    prompt: 'Choose the correct passive form: "The storm damaged many houses."',
+    options: [
+      'Many houses were damaged by the storm.',
+      'Many houses damaged the storm.',
+      'Many houses was damaged by the storm.',
+      'Many houses are damaged by the storm.'
+    ],
     correctIndex: 0, timeLimit: STANDARD_TIME
   },
   {
-    id: 'D7', section: 'Some / Any',
-    prompt: 'There isn\'t __________ fish in the store.',
-    options: ['any', 'some'],
+    id: 'PV17', section: 'Passive Voice: Past Simple',
+    prompt: 'Choose the correct passive form: "The students answered the questions."',
+    options: [
+      'The questions were answered by the students.',
+      'The questions answered the students.',
+      'The questions was answered by the students.',
+      'The questions are answered by the students.'
+    ],
     correctIndex: 0, timeLimit: STANDARD_TIME
   },
   {
-    id: 'D8', section: 'Some / Any',
-    prompt: 'We need __________ milk for breakfast.',
-    options: ['some', 'any'],
+    id: 'PV18', section: 'Passive Voice: Past Simple',
+    prompt: 'Choose the correct passive form: "The manager cancelled the meeting."',
+    options: [
+      'The meeting was cancelled by the manager.',
+      'The meeting cancelled the manager.',
+      'The meeting is cancelled by the manager.',
+      'The meeting was cancelling by the manager.'
+    ],
     correctIndex: 0, timeLimit: STANDARD_TIME
   },
   {
-    id: 'D9', section: 'Some / Any',
-    prompt: 'Are there __________ eggs in the bowl?',
-    options: ['any', 'some'],
+    id: 'PV19', section: 'Passive Voice: Past Simple',
+    prompt: 'Choose the correct passive form: "They did not invite Sara."',
+    options: [
+      'Sara was not invited.',
+      'Sara did not invited.',
+      'Sara is not invited.',
+      'Sara was not invite.'
+    ],
     correctIndex: 0, timeLimit: STANDARD_TIME
   },
   {
-    id: 'D10', section: 'Some / Any',
-    prompt: 'I have __________ potatoes at home.',
-    options: ['some', 'any'],
+    id: 'PV20', section: 'Passive Voice: Past Simple',
+    prompt: 'Choose the correct passive question: "Did they finish the project?"',
+    options: [
+      'Was the project finished?',
+      'Did the project finished?',
+      'Is the project finished?',
+      'Was the project finish?'
+    ],
     correctIndex: 0, timeLimit: STANDARD_TIME
   },
 
-  // Section E - Shopping, colors, materials and items
+  // Future and modals
   {
-    id: 'E1', section: 'Shopping Categories',
-    prompt: 'These items belong to the:',
-    image: '/exam1bac-assets/common-core/shop-jewelry.png',
-    imageAlt: 'Watches, earrings, a necklace and a ring',
-    options: ['jewelry store', 'food store', 'furniture store'],
+    id: 'PV21', section: 'Passive Voice: Future',
+    prompt: 'Choose the correct passive form: "They will announce the results tomorrow."',
+    options: [
+      'The results will be announced tomorrow.',
+      'The results will announce tomorrow.',
+      'The results are announced tomorrow.',
+      'The results will be announce tomorrow.'
+    ],
     correctIndex: 0, timeLimit: STANDARD_TIME
   },
   {
-    id: 'E2', section: 'Shopping Categories',
-    prompt: 'Bananas, chicken, milk and beef belong to the:',
-    options: ['food store', 'clothing store', 'utensils store'],
+    id: 'PV22', section: 'Passive Voice: Future',
+    prompt: 'Choose the correct passive form: "The school will organize a trip."',
+    options: [
+      'A trip will be organized by the school.',
+      'A trip will organize the school.',
+      'A trip is organized by the school.',
+      'A trip will be organize by the school.'
+    ],
     correctIndex: 0, timeLimit: STANDARD_TIME
   },
   {
-    id: 'E3', section: 'Colors, Materials and Items',
-    prompt: 'Blue, yellow and red are:',
-    options: ['colors', 'materials', 'items'],
+    id: 'PV23', section: 'Passive Voice: Modals',
+    prompt: 'Choose the correct passive form: "You must wear a helmet."',
+    options: [
+      'A helmet must be worn.',
+      'A helmet must wear.',
+      'A helmet must be wore.',
+      'A helmet is must worn.'
+    ],
     correctIndex: 0, timeLimit: STANDARD_TIME
   },
   {
-    id: 'E4', section: 'Shopping Categories',
-    prompt: 'A bowl, a spoon, a fork and a knife belong to the:',
-    options: ['utensils store', 'jewelry store', 'clothing store'],
+    id: 'PV24', section: 'Passive Voice: Modals',
+    prompt: 'Choose the correct passive form: "Students should submit homework on time."',
+    options: [
+      'Homework should be submitted on time.',
+      'Homework should submit on time.',
+      'Homework should be submit on time.',
+      'Homework is should submitted on time.'
+    ],
     correctIndex: 0, timeLimit: STANDARD_TIME
   },
   {
-    id: 'E5', section: 'Shopping Categories',
-    prompt: 'A bed, a chair and a pillow belong to the:',
-    options: ['furniture store', 'food store', 'jewelry store'],
+    id: 'PV25', section: 'Passive Voice: Modals',
+    prompt: 'Choose the correct passive form: "We can solve this problem."',
+    options: [
+      'This problem can be solved.',
+      'This problem can solve.',
+      'This problem is can solved.',
+      'This problem can be solve.'
+    ],
     correctIndex: 0, timeLimit: STANDARD_TIME
   },
   {
-    id: 'E6', section: 'Shopping Categories',
-    prompt: 'Shoes, a shirt and a tie belong to the:',
-    options: ['clothing store', 'utensils store', 'food store'],
+    id: 'PV26', section: 'Passive Voice: Modals',
+    prompt: 'Choose the correct passive form: "They may postpone the match."',
+    options: [
+      'The match may be postponed.',
+      'The match may postpone.',
+      'The match may be postpone.',
+      'The match is may postponed.'
+    ],
     correctIndex: 0, timeLimit: STANDARD_TIME
   },
   {
-    id: 'E7', section: 'Shopping Categories',
-    prompt: 'A ring, a necklace and earrings belong to the:',
-    options: ['jewelry store', 'furniture store', 'food store'],
+    id: 'PV27', section: 'Passive Voice: Future',
+    prompt: 'Choose the correct passive form: "Nobody will forget this lesson."',
+    options: [
+      'This lesson will not be forgotten.',
+      'This lesson will not forget.',
+      'This lesson is not forgotten.',
+      'This lesson will be not forget.'
+    ],
     correctIndex: 0, timeLimit: STANDARD_TIME
   },
   {
-    id: 'E8', section: 'Colors, Materials and Items',
-    prompt: 'Cotton, wool and silk are:',
-    options: ['materials', 'colors', 'shops'],
+    id: 'PV28', section: 'Passive Voice: Going To',
+    prompt: 'Choose the correct passive form: "The mechanic is going to fix the bus."',
+    options: [
+      'The bus is going to be fixed by the mechanic.',
+      'The bus is going to fix by the mechanic.',
+      'The bus was going to be fixed by the mechanic.',
+      'The bus is going to be fix by the mechanic.'
+    ],
     correctIndex: 0, timeLimit: STANDARD_TIME
   },
   {
-    id: 'E9', section: 'Colors, Materials and Items',
-    prompt: 'Dress, skirt and sweater are:',
-    options: ['items', 'colors', 'materials'],
+    id: 'PV29', section: 'Passive Voice: Have To',
+    prompt: 'Choose the correct passive form: "They have to clean the lab."',
+    options: [
+      'The lab has to be cleaned.',
+      'The lab has to clean.',
+      'The lab have to be cleaned.',
+      'The lab has to be clean.'
+    ],
     correctIndex: 0, timeLimit: STANDARD_TIME
   },
   {
-    id: 'E10', section: 'Colors, Materials and Items',
-    prompt: 'Black, white and green are:',
-    options: ['colors', 'materials', 'stores'],
+    id: 'PV30', section: 'Passive Voice: Modals',
+    prompt: 'Choose the correct passive question: "Can they repair the computer?"',
+    options: [
+      'Can the computer be repaired?',
+      'Can the computer repair?',
+      'Is the computer can repaired?',
+      'Can the computer be repair?'
+    ],
+    correctIndex: 0, timeLimit: STANDARD_TIME
+  },
+
+  // Perfect and continuous passives
+  {
+    id: 'PV31', section: 'Passive Voice: Present Perfect',
+    prompt: 'Choose the correct passive form: "They have sent the email."',
+    options: [
+      'The email has been sent.',
+      'The email has sent.',
+      'The email was sent.',
+      'The email has been send.'
+    ],
+    correctIndex: 0, timeLimit: STANDARD_TIME
+  },
+  {
+    id: 'PV32', section: 'Passive Voice: Present Perfect',
+    prompt: 'Choose the correct passive form: "Someone has broken the window."',
+    options: [
+      'The window has been broken.',
+      'The window has broken.',
+      'The window was been broken.',
+      'The window has been broke.'
+    ],
+    correctIndex: 0, timeLimit: STANDARD_TIME
+  },
+  {
+    id: 'PV33', section: 'Passive Voice: Present Perfect',
+    prompt: 'Choose the correct passive form: "We have already discussed the topic."',
+    options: [
+      'The topic has already been discussed.',
+      'The topic has already discussed.',
+      'The topic was already discussed.',
+      'The topic has already been discuss.'
+    ],
+    correctIndex: 0, timeLimit: STANDARD_TIME
+  },
+  {
+    id: 'PV34', section: 'Passive Voice: Present Perfect',
+    prompt: 'Choose the correct passive form: "They have not painted the wall yet."',
+    options: [
+      'The wall has not been painted yet.',
+      'The wall has not painted yet.',
+      'The wall was not painted yet.',
+      'The wall has not been paint yet.'
+    ],
+    correctIndex: 0, timeLimit: STANDARD_TIME
+  },
+  {
+    id: 'PV35', section: 'Passive Voice: Present Perfect',
+    prompt: 'Choose the correct passive question: "Has the teacher corrected the tests?"',
+    options: [
+      'Have the tests been corrected by the teacher?',
+      'Have the tests corrected by the teacher?',
+      'Were the tests been corrected by the teacher?',
+      'Have the tests been correct by the teacher?'
+    ],
+    correctIndex: 0, timeLimit: STANDARD_TIME
+  },
+  {
+    id: 'PV36', section: 'Passive Voice: Past Perfect',
+    prompt: 'Choose the correct passive form: "They had finished the work before sunset."',
+    options: [
+      'The work had been finished before sunset.',
+      'The work had finished before sunset.',
+      'The work was been finished before sunset.',
+      'The work had been finish before sunset.'
+    ],
+    correctIndex: 0, timeLimit: STANDARD_TIME
+  },
+  {
+    id: 'PV37', section: 'Passive Voice: Past Perfect',
+    prompt: 'Choose the correct passive form: "Someone had locked the door."',
+    options: [
+      'The door had been locked.',
+      'The door had locked.',
+      'The door was been locked.',
+      'The door had been lock.'
+    ],
+    correctIndex: 0, timeLimit: STANDARD_TIME
+  },
+  {
+    id: 'PV38', section: 'Passive Voice: Present Continuous',
+    prompt: 'Choose the correct passive form: "They are building a new library."',
+    options: [
+      'A new library is being built.',
+      'A new library is building.',
+      'A new library was being built.',
+      'A new library is being build.'
+    ],
+    correctIndex: 0, timeLimit: STANDARD_TIME
+  },
+  {
+    id: 'PV39', section: 'Passive Voice: Present Continuous',
+    prompt: 'Choose the correct passive form: "The nurse is helping the patient."',
+    options: [
+      'The patient is being helped by the nurse.',
+      'The patient is helping by the nurse.',
+      'The patient was being helped by the nurse.',
+      'The patient is being help by the nurse.'
+    ],
+    correctIndex: 0, timeLimit: STANDARD_TIME
+  },
+  {
+    id: 'PV40', section: 'Passive Voice: Past Continuous',
+    prompt: 'Choose the correct passive form: "They were interviewing the actor."',
+    options: [
+      'The actor was being interviewed.',
+      'The actor was interviewing.',
+      'The actor is being interviewed.',
+      'The actor was being interview.'
+    ],
+    correctIndex: 0, timeLimit: STANDARD_TIME
+  },
+
+  // Mixed passive voice practice
+  {
+    id: 'PV41', section: 'Passive Voice: Mixed Practice',
+    prompt: 'Choose the correct passive form: "The children broke the vase."',
+    options: [
+      'The vase was broken by the children.',
+      'The vase broke the children.',
+      'The vase is broken by the children.',
+      'The vase was broke by the children.'
+    ],
+    correctIndex: 0, timeLimit: STANDARD_TIME
+  },
+  {
+    id: 'PV42', section: 'Passive Voice: Mixed Practice',
+    prompt: 'Complete the sentence: "The letter __________ yesterday."',
+    options: [
+      'was sent',
+      'is sent',
+      'sent',
+      'was send'
+    ],
+    correctIndex: 0, timeLimit: STANDARD_TIME
+  },
+  {
+    id: 'PV43', section: 'Passive Voice: Mixed Practice',
+    prompt: 'Complete the sentence: "Arabic __________ in many countries."',
+    options: [
+      'is spoken',
+      'speaks',
+      'was spoken',
+      'is speaking'
+    ],
+    correctIndex: 0, timeLimit: STANDARD_TIME
+  },
+  {
+    id: 'PV44', section: 'Passive Voice: Mixed Practice',
+    prompt: 'Choose the correct passive form: "They make cars in this factory."',
+    options: [
+      'Cars are made in this factory.',
+      'Cars make in this factory.',
+      'Cars were made in this factory.',
+      'Cars are make in this factory.'
+    ],
+    correctIndex: 0, timeLimit: STANDARD_TIME
+  },
+  {
+    id: 'PV45', section: 'Passive Voice: Mixed Practice',
+    prompt: 'Choose the active sentence for: "My room is cleaned every Friday."',
+    options: [
+      'Someone cleans my room every Friday.',
+      'Someone cleaned my room every Friday.',
+      'My room cleans someone every Friday.',
+      'Someone is cleaning my room every Friday.'
+    ],
+    correctIndex: 0, timeLimit: STANDARD_TIME
+  },
+  {
+    id: 'PV46', section: 'Passive Voice: Mixed Practice',
+    prompt: 'Choose the correct passive question: "Do they grow oranges here?"',
+    options: [
+      'Are oranges grown here?',
+      'Do oranges grow here by them?',
+      'Were oranges grown here?',
+      'Are oranges grow here?'
+    ],
+    correctIndex: 0, timeLimit: STANDARD_TIME
+  },
+  {
+    id: 'PV47', section: 'Passive Voice: Mixed Practice',
+    prompt: 'Choose the correct passive question: "Who wrote this poem?"',
+    options: [
+      'Who was this poem written by?',
+      'Who this poem was written by?',
+      'Who is this poem written by?',
+      'Who was this poem wrote by?'
+    ],
+    correctIndex: 0, timeLimit: STANDARD_TIME
+  },
+  {
+    id: 'PV48', section: 'Passive Voice: Mixed Practice',
+    prompt: 'Complete the sentence: "The report must __________ before Monday."',
+    options: [
+      'be finished',
+      'finish',
+      'be finish',
+      'finished'
+    ],
+    correctIndex: 0, timeLimit: STANDARD_TIME
+  },
+  {
+    id: 'PV49', section: 'Passive Voice: Mixed Practice',
+    prompt: 'Complete the sentence: "The tickets __________ by my uncle last week."',
+    options: [
+      'were bought',
+      'are bought',
+      'bought',
+      'were buy'
+    ],
+    correctIndex: 0, timeLimit: STANDARD_TIME
+  },
+  {
+    id: 'PV50', section: 'Passive Voice: Mixed Practice',
+    prompt: 'Which sentence is in the passive voice?',
+    options: [
+      'The meal was cooked by my mother.',
+      'My mother cooked the meal.',
+      'My mother is cooking the meal.',
+      'My mother cooks dinner every day.'
+    ],
     correctIndex: 0, timeLimit: STANDARD_TIME
   }
 ];
@@ -549,18 +758,96 @@ function shuffleQuestionOptions(question) {
   return { ...question, options: shuffledOptions, correctIndex: newCorrectIndex };
 }
 
+function pad2(value) {
+  return String(value).padStart(2, '0');
+}
+
+function getQuizWindowDateKey() {
+  return `${QUIZ_WINDOW.year}-${pad2(QUIZ_WINDOW.month)}-${pad2(QUIZ_WINDOW.day)}`;
+}
+
+function getZonedDateTimeParts(date = new Date()) {
+  const formatter = new Intl.DateTimeFormat('en-GB', {
+    timeZone: QUIZ_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23'
+  });
+  const parts = Object.fromEntries(formatter.formatToParts(date).map(part => [part.type, part.value]));
+  const year = Number(parts.year);
+  const month = Number(parts.month);
+  const day = Number(parts.day);
+  const hour = Number(parts.hour);
+  const minute = Number(parts.minute);
+  const second = Number(parts.second);
+
+  return {
+    year,
+    month,
+    day,
+    hour,
+    minute,
+    second,
+    dateKey: `${year}-${pad2(month)}-${pad2(day)}`
+  };
+}
+
+function quizWindowLabel() {
+  return 'Monday, June 8, 2026 from 17:00 to 17:30';
+}
+
+function getQuizWindowStatus(date = new Date()) {
+  const now = getZonedDateTimeParts(date);
+  const targetDateKey = getQuizWindowDateKey();
+  const startSeconds = (QUIZ_WINDOW.startHour * 60 + QUIZ_WINDOW.startMinute) * 60;
+  const endSeconds = (QUIZ_WINDOW.endHour * 60 + QUIZ_WINDOW.endMinute) * 60;
+  const nowSeconds = (now.hour * 60 + now.minute) * 60 + now.second;
+
+  if (now.dateKey < targetDateKey || (now.dateKey === targetDateKey && nowSeconds < startSeconds)) {
+    return {
+      state: 'upcoming',
+      remainingSeconds: 0,
+      message: `The quiz opens on ${quizWindowLabel()} (${QUIZ_TIME_ZONE}).`
+    };
+  }
+
+  if (now.dateKey === targetDateKey && nowSeconds < endSeconds) {
+    return {
+      state: 'open',
+      remainingSeconds: Math.max(0, endSeconds - nowSeconds),
+      message: `The quiz is open until 17:30 (${QUIZ_TIME_ZONE}).`
+    };
+  }
+
+  return {
+    state: 'closed',
+    remainingSeconds: 0,
+    message: `The quiz window closed on ${quizWindowLabel()} (${QUIZ_TIME_ZONE}).`
+  };
+}
+
 function buildStudentQuestionSet() {
   return shuffleArray(questions)
     .slice(0, QUIZ_QUESTION_COUNT)
     .map(q => shuffleQuestionOptions(q));
 }
 
-function questionForSlot(question, slotIndex) {
+function getSessionTimeRemaining(player) {
+  if (!player || player.quizStatus === 'finished') return 0;
+  const windowStatus = getQuizWindowStatus();
+  return windowStatus.state === 'open' ? windowStatus.remainingSeconds : 0;
+}
+
+function questionForSlot(question, slotIndex, player) {
   return {
     ...question,
     number: slotIndex + 1,
     total: QUIZ_QUESTION_COUNT,
-    timeLimit: STANDARD_TIME
+    timeLimit: Math.max(1, getSessionTimeRemaining(player) || STANDARD_TIME)
   };
 }
 
@@ -571,10 +858,10 @@ function ensureStudentQuestionSet(player) {
   return player.questionSet;
 }
 
-function getPlayerQuestion(player, slotIndex = gameState.currentQuestionIndex) {
+function getPlayerQuestion(player, slotIndex = player?.currentQuestionIndex ?? 0) {
   if (!player || slotIndex < 0 || slotIndex >= QUIZ_QUESTION_COUNT) return null;
   const questionSet = ensureStudentQuestionSet(player);
-  return questionForSlot(questionSet[slotIndex], slotIndex);
+  return questionForSlot(questionSet[slotIndex], slotIndex, player);
 }
 
 function publicQuestion(question) {
@@ -593,20 +880,22 @@ function publicQuestion(question) {
   };
 }
 
-function teacherSlotQuestion(slotIndex = gameState.currentQuestionIndex) {
-  const slotNumber = Math.max(0, slotIndex) + 1;
+function teacherSlotQuestion() {
+  const windowStatus = getQuizWindowStatus();
   return {
-    id: `slot-${slotNumber}`,
-    number: slotNumber,
+    id: 'open-session',
+    number: 1,
     total: QUIZ_QUESTION_COUNT,
-    section: 'Randomized Quiz',
-    prompt: `Question ${slotNumber} of ${QUIZ_QUESTION_COUNT}: each student is seeing one question randomly selected from a ${questions.length}-question bank.`,
+    section: 'Scheduled Passive Voice Quiz',
+    prompt: windowStatus.state === 'open'
+      ? `The quiz is open. Each student receives 10 random questions from a ${questions.length}-question passive voice bank.`
+      : windowStatus.message,
     passage: null,
     image: null,
     imageAlt: '',
-    options: ['Students have individual questions and shuffled choices.'],
+    options: ['Students have individual randomized questions and shuffled choices.'],
     points: POINTS_PER_QUESTION,
-    timeLimit: STANDARD_TIME
+    timeLimit: Math.max(1, windowStatus.remainingSeconds || STANDARD_TIME)
   };
 }
 
@@ -614,18 +903,17 @@ function getActivePlayers() {
   return Object.values(gameState.players).filter(p => p.status === 'active');
 }
 
-function getCurrentSlotKey(slotIndex = gameState.currentQuestionIndex) {
-  return `slot-${slotIndex + 1}`;
+function getFinishedPlayers() {
+  return getActivePlayers().filter(p => p.quizStatus === 'finished');
 }
 
-function findAnswer(player, slotIndex = gameState.currentQuestionIndex) {
+function findAnswer(player, slotIndex = player?.currentQuestionIndex ?? 0) {
   if (!player || slotIndex < 0) return null;
   return player.answers.find(a => a.questionNumber === slotIndex + 1) || null;
 }
 
 function currentAnswerCount() {
-  if (gameState.currentQuestionIndex < 0) return 0;
-  return getActivePlayers().filter(player => findAnswer(player)).length;
+  return getFinishedPlayers().length;
 }
 
 function emitAnswerProgress() {
@@ -633,102 +921,6 @@ function emitAnswerProgress() {
     count: currentAnswerCount(),
     total: getActivePlayers().length
   });
-}
-
-function clearAutoAdvanceTimer() {
-  if (gameState.autoAdvanceTimer) {
-    clearTimeout(gameState.autoAdvanceTimer);
-    gameState.autoAdvanceTimer = null;
-  }
-}
-
-function scheduleNextAfterResults(slotIndex = gameState.currentQuestionIndex) {
-  clearAutoAdvanceTimer();
-  gameState.autoAdvanceTimer = setTimeout(() => {
-    if (gameState.phase !== 'results' || gameState.currentQuestionIndex !== slotIndex) return;
-
-    if (slotIndex >= QUIZ_QUESTION_COUNT - 1) {
-      finishQuiz();
-      return;
-    }
-    showQuestionAt(slotIndex + 1);
-  }, RESULT_REVEAL_MS);
-}
-
-function revealCurrentQuestionResults(slotIndex = gameState.currentQuestionIndex) {
-  if (gameState.phase !== 'question' || slotIndex !== gameState.currentQuestionIndex) return;
-
-  finishCurrentQuestion(true);
-  scheduleNextAfterResults(slotIndex);
-}
-
-function maybeAdvanceAfterAllAnswered(slotIndex = gameState.currentQuestionIndex) {
-  if (gameState.phase !== 'question' || slotIndex !== gameState.currentQuestionIndex) return;
-
-  const activePlayers = getActivePlayers();
-  if (!activePlayers.length) return;
-  if (!activePlayers.every(player => findAnswer(player, slotIndex))) return;
-
-  setTimeout(() => {
-    if (gameState.phase !== 'question' || slotIndex !== gameState.currentQuestionIndex) return;
-
-    const stillActive = getActivePlayers();
-    if (!stillActive.length) return;
-    if (!stillActive.every(player => findAnswer(player, slotIndex))) return;
-
-    revealCurrentQuestionResults(slotIndex);
-  }, 650);
-}
-
-function buildQuestionResults(slotIndex = gameState.currentQuestionIndex) {
-  const slotKey = getCurrentSlotKey(slotIndex);
-  const results = {};
-  let correctCount = 0;
-  let totalAnswered = 0;
-  let noAnswerCount = 0;
-
-  for (const player of getActivePlayers()) {
-    const question = getPlayerQuestion(player, slotIndex);
-    if (!question) continue;
-
-    const answer = findAnswer(player, slotIndex);
-    if (!answer) {
-      noAnswerCount += 1;
-      results[player.id] = {
-        correct: false,
-        points: 0,
-        score: Math.round(player.score * 100) / 100,
-        noAnswer: true,
-        correctAnswer: question.options[question.correctIndex]
-      };
-      continue;
-    }
-
-    totalAnswered += 1;
-    if (answer.correct) correctCount += 1;
-    results[player.id] = {
-      correct: answer.correct,
-      points: answer.points,
-      score: Math.round(player.score * 100) / 100,
-      choiceIndex: answer.choiceIndex,
-      correctAnswer: answer.correctAnswer
-    };
-  }
-
-  return {
-    questionId: slotKey,
-    questionNumber: slotIndex + 1,
-    correctAnswer: 'Each student had a different question.',
-    correctIndex: null,
-    results,
-    stats: {
-      totalAnswered,
-      correctCount,
-      totalActive: getActivePlayers().length,
-      noAnswerCount
-    },
-    leaderboard: getLeaderboard()
-  };
 }
 
 function findPlayerEntryByToken(token) {
@@ -744,6 +936,17 @@ function clearPendingDisconnect(token) {
   }
 }
 
+function clearPlayerTimer(player) {
+  if (player?.sessionTimer) {
+    clearInterval(player.sessionTimer);
+    player.sessionTimer = null;
+  }
+}
+
+function clearAllPlayerTimers() {
+  Object.values(gameState.players).forEach(clearPlayerTimer);
+}
+
 function getLeaderboard() {
   return Object.values(gameState.players)
     .map(p => ({
@@ -753,13 +956,17 @@ function getLeaderboard() {
       studentClass: p.studentClass || '',
       score: Math.round(p.score * 100) / 100,
       status: p.status,
+      quizStatus: p.quizStatus || 'in_progress',
+      correctCount: p.answers?.filter(a => a.correct).length || 0,
       removalReason: p.removalReason || ''
     }))
     .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
 }
 
-function publicPlayer(player, slotIndex = gameState.currentQuestionIndex) {
-  const hasAnsweredCurrent = slotIndex >= 0 ? Boolean(findAnswer(player, slotIndex)) : false;
+function publicPlayer(player) {
+  const hasAnsweredCurrent = player.quizStatus === 'finished'
+    ? true
+    : Boolean(findAnswer(player, player.currentQuestionIndex));
 
   return {
     id: player.id,
@@ -768,6 +975,10 @@ function publicPlayer(player, slotIndex = gameState.currentQuestionIndex) {
     studentClass: player.studentClass || '',
     score: Math.round(player.score * 100) / 100,
     status: player.status,
+    quizStatus: player.quizStatus || 'in_progress',
+    currentQuestionNumber: (player.currentQuestionIndex ?? 0) + 1,
+    totalQuestions: QUIZ_QUESTION_COUNT,
+    correctCount: player.answers?.filter(a => a.correct).length || 0,
     connectionStatus: player.connectionStatus || 'online',
     hasAnsweredCurrent,
     removalReason: player.removalReason || '',
@@ -775,22 +986,31 @@ function publicPlayer(player, slotIndex = gameState.currentQuestionIndex) {
   };
 }
 
+function getTeacherPhase() {
+  if (gameState.phase === 'finished') return 'finished';
+  const windowStatus = getQuizWindowStatus();
+  if (windowStatus.state === 'open' && getActivePlayers().length) return 'question';
+  return 'lobby';
+}
+
 function getTeacherState() {
-  const qi = gameState.currentQuestionIndex;
-  const currentQuestion = qi >= 0 && qi < QUIZ_QUESTION_COUNT ? teacherSlotQuestion(qi) : null;
+  const phase = getTeacherPhase();
+  const currentQuestion = phase === 'question' ? teacherSlotQuestion() : null;
   const players = Object.fromEntries(
-    Object.entries(gameState.players).map(([id, p]) => [id, publicPlayer(p, qi)])
+    Object.entries(gameState.players).map(([id, p]) => [id, publicPlayer(p)])
   );
+  const windowStatus = getQuizWindowStatus();
   return {
-    phase: gameState.phase,
+    phase,
     players,
     leaderboard: getLeaderboard(),
     currentQuestion,
-    currentQuestionIndex: qi,
+    currentQuestionIndex: 0,
     totalQuestions: QUIZ_QUESTION_COUNT,
     activeCount: getActivePlayers().length,
     answerCount: currentAnswerCount(),
-    timeRemaining: gameState.timeRemaining
+    timeRemaining: windowStatus.remainingSeconds,
+    windowStatus
   };
 }
 
@@ -806,33 +1026,22 @@ function emitStudentCurrentState(socket, player) {
     score: Math.round(player.score * 100) / 100
   });
 
-  if (gameState.phase === 'question') {
-    const question = getPlayerQuestion(player);
-    if (!question) return;
-
-    socket.emit('game:question', publicQuestion(question));
-    socket.emit('game:timer', { timeRemaining: gameState.timeRemaining });
-
-    const answer = findAnswer(player);
-    if (answer) {
-      socket.emit('student:answerReceived', { choiceIndex: answer.choiceIndex });
-    }
-    return;
-  }
-
-  if (gameState.phase === 'results' && gameState.lastResultsPayload) {
-    socket.emit('game:results', gameState.lastResultsPayload);
-    return;
-  }
-
-  if (gameState.phase === 'leaderboard') {
-    socket.emit('game:leaderboard', { leaderboard: getLeaderboard() });
-    return;
-  }
-
-  if (gameState.phase === 'finished') {
+  if (player.quizStatus === 'finished') {
     socket.emit('game:finished', { leaderboard: getLeaderboard() });
+    return;
   }
+
+  const windowStatus = getQuizWindowStatus();
+  if (windowStatus.state !== 'open') {
+    finishPlayerQuiz(player, 'time');
+    return;
+  }
+
+  const question = getPlayerQuestion(player);
+  if (!question) return;
+
+  socket.emit('game:question', publicQuestion(question));
+  socket.emit('game:timer', { timeRemaining: getSessionTimeRemaining(player) });
 }
 
 // ─── Game state ───────────────────────────────────────────────────────────────
@@ -840,103 +1049,62 @@ const gameState = {
   phase: 'lobby',
   players: {},
   bannedNames: new Set(),    // stores banKey (order-independent)
-  currentQuestionIndex: -1,
-  questionStartedAt: null,
-  timeRemaining: 0,
-  timer: null,
-  autoAdvanceTimer: null,
-  lastResultsPayload: null,
   pendingDisconnects: {}
 };
 
-// ─── Timer ────────────────────────────────────────────────────────────────────
-function clearTimer() {
-  if (gameState.timer) {
-    clearInterval(gameState.timer);
-    gameState.timer = null;
-  }
-}
-
-function startTimer(question) {
-  clearTimer();
-  gameState.timeRemaining = question.timeLimit;
-  io.emit('game:timer', { timeRemaining: gameState.timeRemaining });
-
-  gameState.timer = setInterval(() => {
-    gameState.timeRemaining -= 1;
-    io.emit('game:timer', { timeRemaining: gameState.timeRemaining });
-    if (gameState.timeRemaining <= 0) {
-      revealCurrentQuestionResults(gameState.currentQuestionIndex);
-    }
-  }, 1000);
-}
-
 // ─── Quiz flow ────────────────────────────────────────────────────────────────
-function showQuestionAt(slotIndex) {
-  clearTimer();
-  clearAutoAdvanceTimer();
-
-  if (slotIndex >= QUIZ_QUESTION_COUNT) {
-    finishQuiz();
+function tickPlayerTimer(player) {
+  const currentPlayer = gameState.players[player.id];
+  if (!currentPlayer || currentPlayer.status !== 'active' || currentPlayer.quizStatus === 'finished') {
+    clearPlayerTimer(player);
     return;
   }
 
-  gameState.currentQuestionIndex = Math.max(0, Math.min(slotIndex, QUIZ_QUESTION_COUNT - 1));
-  gameState.phase = 'question';
-  gameState.lastResultsPayload = null;
-  gameState.questionStartedAt = Date.now();
-  gameState.timeRemaining = STANDARD_TIME;
-
-  for (const player of getActivePlayers()) {
-    const studentSocket = io.sockets.sockets.get(player.id);
-    if (studentSocket) {
-      emitStudentCurrentState(studentSocket, player);
-    }
+  const remaining = getSessionTimeRemaining(currentPlayer);
+  currentPlayer.timeRemaining = remaining;
+  io.to(currentPlayer.id).emit('game:timer', { timeRemaining: remaining });
+  if (remaining <= 0) {
+    finishPlayerQuiz(currentPlayer, 'time');
+  } else {
+    emitTeacherState();
   }
-  io.to('teachers').emit('game:question', teacherSlotQuestion());
-  emitAnswerProgress();
-  emitTeacherState();
-  startTimer({ timeLimit: STANDARD_TIME });
 }
 
-function startNextQuestion() {
-  showQuestionAt(gameState.currentQuestionIndex + 1);
+function startPlayerTimer(player) {
+  clearPlayerTimer(player);
+  tickPlayerTimer(player);
+  if (player.status === 'active' && player.quizStatus !== 'finished') {
+    player.sessionTimer = setInterval(() => tickPlayerTimer(player), 1000);
+  }
 }
 
-function startPreviousQuestion() {
-  if (gameState.currentQuestionIndex <= 0) return;
-  showQuestionAt(gameState.currentQuestionIndex - 1);
-}
+function finishPlayerQuiz(player, reason = 'completed', notifyTeacher = true) {
+  if (!player || player.quizStatus === 'finished') return;
+  clearPlayerTimer(player);
+  player.quizStatus = 'finished';
+  player.finishReason = reason;
+  player.finishedAt = Date.now();
+  player.timeRemaining = 0;
 
-function finishCurrentQuestion(showResults) {
-  if (gameState.phase !== 'question') return null;
+  io.to(player.id).emit('student:score', {
+    score: Math.round(player.score * 100) / 100
+  });
+  io.to(player.id).emit('game:finished', { leaderboard: getLeaderboard() });
 
-  clearTimer();
-  const slotIndex = gameState.currentQuestionIndex;
-  const payload = buildQuestionResults(slotIndex);
-
-  // Push updated scores to each student
-  for (const player of Object.values(gameState.players)) {
-    io.to(player.id).emit('student:score', {
-      score: Math.round(player.score * 100) / 100
-    });
+  if (notifyTeacher) {
+    emitAnswerProgress();
+    emitTeacherState();
   }
-
-  gameState.phase = showResults ? 'results' : 'closed';
-  gameState.lastResultsPayload = payload;
-
-  if (showResults) {
-    io.emit('game:results', payload);
-  }
-  emitTeacherState();
-  return payload;
 }
 
 function finishQuiz() {
-  clearTimer();
-  clearAutoAdvanceTimer();
+  clearAllPlayerTimers();
+  for (const player of getActivePlayers()) {
+    finishPlayerQuiz(player, player.quizStatus === 'finished' ? player.finishReason : 'ended_by_teacher', false);
+  }
   gameState.phase = 'finished';
   io.emit('game:finished', { leaderboard: getLeaderboard() });
+  emitAnswerProgress();
   emitTeacherState();
 }
 
@@ -945,6 +1113,7 @@ function markPlayerRemoved(playerId, reason, type, token, shouldDisconnect = tru
   if (!player || player.status !== 'active') return false;
   if (token && player.token !== token) return false;
   clearPendingDisconnect(player.token);
+  clearPlayerTimer(player);
 
   player.status = 'removed';
   player.removalReason = reason || 'Removed from the quiz';
@@ -965,7 +1134,6 @@ function markPlayerRemoved(playerId, reason, type, token, shouldDisconnect = tru
   io.emit('game:playerCount', { count: getActivePlayers().length });
   emitAnswerProgress();
   emitTeacherState();
-  maybeAdvanceAfterAllAnswered();
 
   const targetSocket = io.sockets.sockets.get(playerId);
   if (targetSocket) {
@@ -997,11 +1165,15 @@ function restorePlayer(playerId) {
     targetSocket.emit('student:restored', {
       score: Math.round(player.score * 100) / 100
     });
+    if (player.quizStatus !== 'finished' && getQuizWindowStatus().state === 'open') {
+      startPlayerTimer(player);
+    } else if (player.quizStatus !== 'finished') {
+      finishPlayerQuiz(player, 'time', false);
+    }
     emitStudentCurrentState(targetSocket, player);
     io.emit('game:playerCount', { count: getActivePlayers().length });
     emitAnswerProgress();
     emitTeacherState();
-    maybeAdvanceAfterAllAnswered();
     return true;
   }
 
@@ -1016,18 +1188,12 @@ function restorePlayer(playerId) {
 }
 
 function resetQuiz() {
-  clearTimer();
-  clearAutoAdvanceTimer();
+  clearAllPlayerTimers();
   Object.values(gameState.pendingDisconnects).forEach(clearTimeout);
   gameState.players = {};
 
   gameState.bannedNames.clear();
   gameState.phase = 'lobby';
-  gameState.currentQuestionIndex = -1;
-  gameState.questionStartedAt = null;
-  gameState.timeRemaining = 0;
-  gameState.autoAdvanceTimer = null;
-  gameState.lastResultsPayload = null;
   gameState.pendingDisconnects = {};
 
   io.emit('game:reset', { clearStudents: true });
@@ -1047,11 +1213,6 @@ function resumePlayer(socket, token) {
     delete gameState.players[oldSocketId];
     player.id = socket.id;
     gameState.players[socket.id] = player;
-
-    if (gameState.lastResultsPayload?.results?.[oldSocketId]) {
-      gameState.lastResultsPayload.results[socket.id] = gameState.lastResultsPayload.results[oldSocketId];
-      delete gameState.lastResultsPayload.results[oldSocketId];
-    }
   }
 
   if (player.status === 'allowed_back') {
@@ -1074,6 +1235,11 @@ function resumePlayer(socket, token) {
     totalQuestions: QUIZ_QUESTION_COUNT
   });
 
+  if (player.quizStatus !== 'finished' && getQuizWindowStatus().state === 'open') {
+    startPlayerTimer(player);
+  } else if (player.quizStatus !== 'finished') {
+    finishPlayerQuiz(player, 'time', false);
+  }
   emitStudentCurrentState(socket, player);
   emitAnswerProgress();
   emitTeacherState();
@@ -1086,6 +1252,7 @@ function scheduleDisconnectRemoval(playerId) {
 
   player.connectionStatus = 'reconnecting';
   player.disconnectedAt = Date.now();
+  clearPlayerTimer(player);
   clearPendingDisconnect(player.token);
 
   gameState.pendingDisconnects[player.token] = setTimeout(() => {
@@ -1138,6 +1305,11 @@ function activateAllowedBackPlayer(socket, entry, cleanName, cleanNumber, cleanC
     totalQuestions: QUIZ_QUESTION_COUNT
   });
 
+  if (player.quizStatus !== 'finished' && getQuizWindowStatus().state === 'open') {
+    startPlayerTimer(player);
+  } else if (player.quizStatus !== 'finished') {
+    finishPlayerQuiz(player, 'time', false);
+  }
   emitStudentCurrentState(socket, player);
   io.emit('game:playerCount', { count: getActivePlayers().length });
   emitAnswerProgress();
@@ -1162,16 +1334,9 @@ io.on('connection', (socket) => {
   }));
 
   socket.on('teacher:start', safe(() => {
-    if (gameState.phase !== 'lobby') return;
-    if (getActivePlayers().length < 1) return;
-    const blocked = getActivePlayers().filter(player => player.translationOk === false);
-    if (blocked.length) {
-      io.to('teachers').emit('teacher:notice', {
-        message: `${blocked.length} student${blocked.length === 1 ? '' : 's'} must turn off page translation before the quiz can start.`
-      });
-      return;
-    }
-    startNextQuestion();
+    socket.emit('teacher:notice', {
+      message: `This quiz opens automatically on ${quizWindowLabel()} (${QUIZ_TIME_ZONE}). Students start their own 10-question set when they join during that window.`
+    });
   }));
 
   // "Show Results Now" = end the quiz immediately and show all final results
@@ -1180,11 +1345,15 @@ io.on('connection', (socket) => {
   }));
 
   socket.on('teacher:moveNext', safe(() => {
-    startNextQuestion();
+    socket.emit('teacher:notice', {
+      message: 'Students advance independently in this scheduled quiz.'
+    });
   }));
 
   socket.on('teacher:movePrevious', safe(() => {
-    startPreviousQuestion();
+    socket.emit('teacher:notice', {
+      message: 'Students advance independently in this scheduled quiz.'
+    });
   }));
 
   socket.on('teacher:showLeaderboard', safe(() => {
@@ -1261,6 +1430,11 @@ io.on('connection', (socket) => {
       socket.emit('student:joinRejected', { message: 'The quiz has finished. Please wait for the next session.' });
       return;
     }
+    const windowStatus = getQuizWindowStatus();
+    if (windowStatus.state !== 'open') {
+      socket.emit('student:joinRejected', { message: windowStatus.message });
+      return;
+    }
 
     const normalizedName = normalizeName(cleanName);
     const banKey = normalizeNameForBan(cleanName);
@@ -1299,9 +1473,13 @@ io.on('connection', (socket) => {
       score: 0,
       answers: [],
       questionSet: buildStudentQuestionSet(),
+      currentQuestionIndex: 0,
+      quizStatus: 'in_progress',
+      timeRemaining: windowStatus.remainingSeconds,
       translationOk: translationOk !== false,
       status: 'active',
       connectionStatus: 'online',
+      startedAt: Date.now(),
       joinedAt: Date.now()
     };
 
@@ -1314,6 +1492,7 @@ io.on('connection', (socket) => {
       score: 0,
       totalQuestions: QUIZ_QUESTION_COUNT
     });
+    startPlayerTimer(gameState.players[socket.id]);
     io.emit('game:playerCount', { count: getActivePlayers().length });
     emitStudentCurrentState(socket, gameState.players[socket.id]);
     emitAnswerProgress();
@@ -1326,14 +1505,19 @@ io.on('connection', (socket) => {
       player = resumePlayer(socket, token);
     }
     if (!player || player.status !== 'active') return;
+    if (player.quizStatus === 'finished') return;
     if (translationOk === false) {
       player.translationOk = false;
       markPlayerRemoved(socket.id, 'Page translation is active. Turn it off and ask the teacher to let you back in.', 'translation', token, false);
       return;
     }
     player.translationOk = true;
+    if (getQuizWindowStatus().state !== 'open') {
+      finishPlayerQuiz(player, 'time');
+      return;
+    }
     const question = getPlayerQuestion(player);
-    if (gameState.phase !== 'question' || !question || question.id !== questionId) return;
+    if (!question || question.id !== questionId) return;
 
     const existingAnswer = findAnswer(player);
     if (existingAnswer) {
@@ -1368,7 +1552,18 @@ io.on('connection', (socket) => {
     });
     emitAnswerProgress();
     emitTeacherState();
-    maybeAdvanceAfterAllAnswered();
+
+    if (player.currentQuestionIndex >= QUIZ_QUESTION_COUNT - 1) {
+      finishPlayerQuiz(player, 'completed');
+      return;
+    }
+
+    player.currentQuestionIndex += 1;
+    setTimeout(() => {
+      if (gameState.players[socket.id] === player && player.status === 'active' && player.quizStatus !== 'finished') {
+        emitStudentCurrentState(socket, player);
+      }
+    }, 250);
   }));
 
   socket.on('student:violation', safe(({ playerId, token, reason, type }) => {
@@ -1391,7 +1586,8 @@ io.on('connection', (socket) => {
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 server.listen(PORT, HOST, () => {
-  console.log(`Common Core Quiz Live -> ${HOST}:${PORT}`);
+  console.log(`${QUIZ_TITLE} -> ${HOST}:${PORT}`);
+  console.log(`  Window: ${quizWindowLabel()} (${QUIZ_TIME_ZONE})`);
   console.log('  Teacher: /teacher');
   console.log('  Student: /student');
 });

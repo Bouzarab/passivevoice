@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Student — Common Core Quiz</title>
-  <link rel="stylesheet" href="/exam1bac.css?v=20260514-1">
+  <title>Student - 1 BAC Passive Voice Quiz</title>
+  <link rel="stylesheet" href="/exam1bac.css?v=20260607-1">
 </head>
 <body>
   <main class="app-shell student">
@@ -18,8 +18,8 @@
             <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
           </svg>
         </div>
-        <h2>Common Core Quiz Live</h2>
-        <p class="subtitle">Enter your information to join the quiz session.</p>
+        <h2>1 BAC Passive Voice Quiz</h2>
+        <p class="subtitle">Open Monday, June 8, 2026 from 17:00 to 17:30.</p>
 
         <form id="join-form" autocomplete="off">
           <div class="form-group">
@@ -39,9 +39,9 @@
             <label class="form-label" for="student-class">Class</label>
             <select class="form-select" id="student-class">
               <option value="">— Select your class —</option>
-              <option value="TCSF3">TCSF3</option>
-              <option value="TCSF4">TCSF4</option>
-              <option value="TCSF5">TCSF5</option>
+              <option value="1BACSH2">1 BACSH2</option>
+              <option value="1BACSE3">1 BACSE3</option>
+              <option value="1BACSE4">1 BACSE4</option>
             </select>
           </div>
 
@@ -50,11 +50,11 @@
             Page language check: English page is active.
           </div>
 
-          <button class="join-submit" type="submit" id="join-btn">Join the Quiz</button>
+          <button class="join-submit" type="submit" id="join-btn">Start the Quiz</button>
         </form>
 
         <div class="join-warning">
-          ⚠️ Once joined, do not leave this page or switch to another app — doing so will remove you from the quiz.
+          Once joined, do not leave this page or switch to another app. Doing so will remove you from the quiz.
         </div>
       </div>
     </section>
@@ -63,10 +63,10 @@
     <section class="screen" id="screen-waiting">
       <div class="panel waiting-card">
         <div class="waiting-spinner"></div>
-        <h2 id="waiting-name">—</h2>
+        <h2 id="waiting-name">-</h2>
         <p class="muted" style="font-size:0.88rem; margin-bottom:6px;" id="waiting-detail"></p>
         <p class="muted" style="font-size:0.92rem; margin-top:14px;" id="waiting-status">
-          Your registration is being confirmed…
+          Your registration is being confirmed...
         </p>
       </div>
     </section>
@@ -75,13 +75,13 @@
     <section class="screen" id="screen-question">
       <div class="score-bar">
         <span class="score-bar-name" id="score-name">Student</span>
-        <span class="score-bar-value" id="score-value">0.00 / 20</span>
+        <span class="score-bar-value" id="score-value">0.00 / 5</span>
       </div>
 
       <div class="panel question-card">
         <div class="question-head">
           <div class="question-meta">
-            <span class="tag" id="question-number">Q1 / 20</span>
+            <span class="tag" id="question-number">Q1 / 10</span>
             <span class="tag blue" id="question-section">Section</span>
           </div>
           <div class="timer-wrap">
@@ -103,7 +103,7 @@
         <div class="options" id="question-options"></div>
 
         <div class="answer-status hidden" id="answer-status">
-          Answer submitted — wait for the teacher to move on.
+          Answer submitted. Loading the next question...
         </div>
       </div>
     </section>
@@ -112,14 +112,14 @@
     <section class="screen" id="screen-result">
       <div class="score-bar">
         <span class="score-bar-name" id="result-name">Student</span>
-        <span class="score-bar-value" id="result-score">0.00 / 20</span>
+        <span class="score-bar-value" id="result-score">0.00 / 5</span>
       </div>
       <div class="panel" style="display:grid;gap:14px;">
         <div class="result-strip" id="result-strip">—</div>
         <p class="muted" style="font-size:0.9rem;">
           Correct answer: <strong id="correct-answer">—</strong>
         </p>
-        <p class="muted" style="font-size:0.88rem;">Waiting for the next question…</p>
+        <p class="muted" style="font-size:0.88rem;">Loading the next question...</p>
       </div>
     </section>
 
@@ -128,20 +128,20 @@
       <div class="panel">
         <h2 class="panel-title">Standings</h2>
         <div class="leaderboard-list" id="leaderboard-list"></div>
-        <p class="muted" style="margin-top:12px;font-size:0.88rem;">Waiting for the teacher…</p>
+        <p class="muted" style="margin-top:12px;font-size:0.88rem;">Waiting for the final ranking...</p>
       </div>
     </section>
 
     <!-- ── Finished ──────────────────────────────────────────────────────── -->
     <section class="screen" id="screen-finished">
       <div class="panel" style="display:grid;gap:18px;">
-        <h2 class="panel-title" style="font-size:1.2rem;">Quiz Complete 🎉</h2>
+        <h2 class="panel-title" style="font-size:1.2rem;">Quiz Complete</h2>
 
         <div class="final-score-block" id="final-score-block">
           <div class="score-label">Your Final Score</div>
           <div>
             <span class="score-number" id="final-score">0.00</span>
-            <span class="score-max"> / 20</span>
+            <span class="score-max"> / 5</span>
           </div>
           <div style="margin-top:6px;font-size:0.85rem;color:var(--teal-dark);font-weight:600;" id="final-correct"></div>
         </div>
@@ -164,11 +164,11 @@
       <h2>Removed from Quiz</h2>
       <p id="removed-reason">You left the quiz page.</p>
       <p style="margin-top:12px;">Score at time of removal:</p>
-      <div class="removed-score" id="removed-score">0.00 / 20</div>
+      <div class="removed-score" id="removed-score">0.00 / 5</div>
     </div>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/exam1bac-student.js?v=20260514-1"></script>
+  <script src="/exam1bac-student.js?v=20260607-1"></script>
 </body>
 </html>
