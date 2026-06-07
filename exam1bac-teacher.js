@@ -1,3 +1,26 @@
+function hydrateStudentLink() {
+  const origin = window.location.origin && window.location.origin !== 'null'
+    ? window.location.origin
+    : '';
+  const link = `${origin}/student`;
+  const linkEl = document.getElementById('student-link');
+  const copyBtn = document.getElementById('copy-link-btn');
+
+  if (linkEl) linkEl.textContent = link;
+  if (!copyBtn || copyBtn.dataset.bound === 'true') return;
+
+  copyBtn.dataset.bound = 'true';
+  copyBtn.addEventListener('click', () => {
+    const copiedText = linkEl?.textContent || link;
+    navigator.clipboard.writeText(copiedText).then(() => {
+      copyBtn.textContent = 'Copied!';
+      setTimeout(() => (copyBtn.textContent = 'Copy'), 2000);
+    });
+  });
+}
+
+hydrateStudentLink();
+
 const socket = io();
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -54,20 +77,6 @@ function formatStudentLabel(player) {
   const detail = [player.studentClass, player.number ? `#${player.number}` : ''].filter(Boolean).join(' · ');
   return detail ? `${player.name} (${detail})` : player.name;
 }
-
-// ─── Student link ─────────────────────────────────────────────────────────────
-(function setStudentLink() {
-  const origin = window.location.origin;
-  const link = `${origin}/student`;
-  setText('student-link', link);
-  document.getElementById('copy-link-btn').addEventListener('click', () => {
-    navigator.clipboard.writeText(link).then(() => {
-      const btn = document.getElementById('copy-link-btn');
-      btn.textContent = 'Copied!';
-      setTimeout(() => (btn.textContent = 'Copy'), 2000);
-    });
-  });
-})();
 
 // ─── Render player lists ──────────────────────────────────────────────────────
 function renderPlayerList(containerId, players, mode) {
