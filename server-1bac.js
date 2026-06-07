@@ -149,567 +149,67 @@ app.post('/exam1bac/violation', express.text({ type: '*/*' }), (req, res) => {
 });
 
 // ─── Questions ───────────────────────────────────────────────────────────────
-const questionsRaw = [
-  // Present simple passive
-  {
-    id: 'PV01', section: 'Passive Voice: Present Simple',
-    prompt: 'Choose the correct passive form: "People speak English in many countries."',
-    options: [
-      'English is spoken in many countries.',
-      'English speaks in many countries.',
-      'English was spoken in many countries.',
-      'English is speak in many countries.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV02', section: 'Passive Voice: Present Simple',
-    prompt: 'Choose the correct passive form: "Farmers grow olives in Morocco."',
-    options: [
-      'Olives are grown in Morocco.',
-      'Olives grow farmers in Morocco.',
-      'Olives is grown in Morocco.',
-      'Olives were grow in Morocco.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV03', section: 'Passive Voice: Present Simple',
-    prompt: 'Choose the correct passive form: "The teacher checks the homework every day."',
-    options: [
-      'The homework is checked every day.',
-      'The homework checks every day.',
-      'The homework was checked every day.',
-      'The homework is checking every day.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV04', section: 'Passive Voice: Present Simple',
-    prompt: 'Choose the correct passive form: "They clean the classrooms every morning."',
-    options: [
-      'The classrooms are cleaned every morning.',
-      'The classrooms clean every morning.',
-      'The classrooms were cleaned every morning.',
-      'The classrooms are clean every morning.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV05', section: 'Passive Voice: Present Simple',
-    prompt: 'Choose the correct passive form: "The company sells computers online."',
-    options: [
-      'Computers are sold online.',
-      'Computers sell online.',
-      'Computers are selling online.',
-      'Computers were sold online.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV06', section: 'Passive Voice: Present Simple',
-    prompt: 'Choose the correct passive form: "Someone opens the gate at 8 o\'clock."',
-    options: [
-      'The gate is opened at 8 o\'clock.',
-      'The gate opened at 8 o\'clock.',
-      'The gate is opening at 8 o\'clock.',
-      'The gate was open at 8 o\'clock.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV07', section: 'Passive Voice: Present Simple',
-    prompt: 'Choose the correct passive form: "Many students use smartphones."',
-    options: [
-      'Smartphones are used by many students.',
-      'Smartphones use many students.',
-      'Smartphones are using by many students.',
-      'Smartphones were used by many students.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV08', section: 'Passive Voice: Present Simple',
-    prompt: 'Choose the correct passive form: "The chef prepares lunch at noon."',
-    options: [
-      'Lunch is prepared at noon.',
-      'Lunch prepares at noon.',
-      'Lunch was prepared at noon.',
-      'Lunch is prepare at noon.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV09', section: 'Passive Voice: Present Simple',
-    prompt: 'Choose the correct passive form: "People celebrate Eid in Morocco."',
-    options: [
-      'Eid is celebrated in Morocco.',
-      'Eid celebrates in Morocco.',
-      'Eid was celebrated in Morocco.',
-      'Eid is celebrating in Morocco.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV10', section: 'Passive Voice: Present Simple',
-    prompt: 'Choose the correct passive form: "They do not allow phones in the exam room."',
-    options: [
-      'Phones are not allowed in the exam room.',
-      'Phones do not allow in the exam room.',
-      'Phones were not allowed in the exam room.',
-      'Phones are not allowing in the exam room.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-
-  // Past simple passive
-  {
-    id: 'PV11', section: 'Passive Voice: Past Simple',
-    prompt: 'Choose the correct passive form: "Shakespeare wrote Hamlet."',
-    options: [
-      'Hamlet was written by Shakespeare.',
-      'Hamlet is written by Shakespeare.',
-      'Hamlet wrote Shakespeare.',
-      'Hamlet was wrote by Shakespeare.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV12', section: 'Passive Voice: Past Simple',
-    prompt: 'Choose the correct passive form: "The police arrested the thief yesterday."',
-    options: [
-      'The thief was arrested yesterday.',
-      'The thief arrested yesterday.',
-      'The thief is arrested yesterday.',
-      'The thief was arrest yesterday.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV13', section: 'Passive Voice: Past Simple',
-    prompt: 'Choose the correct passive form: "They built this bridge in 2010."',
-    options: [
-      'This bridge was built in 2010.',
-      'This bridge is built in 2010.',
-      'This bridge built in 2010.',
-      'This bridge was build in 2010.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV14', section: 'Passive Voice: Past Simple',
-    prompt: 'Choose the correct passive form: "My father repaired the car."',
-    options: [
-      'The car was repaired by my father.',
-      'The car repaired my father.',
-      'The car is repaired by my father.',
-      'The car was repairing by my father.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV15', section: 'Passive Voice: Past Simple',
-    prompt: 'Choose the correct passive form: "Someone stole my bag last night."',
-    options: [
-      'My bag was stolen last night.',
-      'My bag stole last night.',
-      'My bag is stolen last night.',
-      'My bag was stole last night.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV16', section: 'Passive Voice: Past Simple',
-    prompt: 'Choose the correct passive form: "The storm damaged many houses."',
-    options: [
-      'Many houses were damaged by the storm.',
-      'Many houses damaged the storm.',
-      'Many houses was damaged by the storm.',
-      'Many houses are damaged by the storm.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV17', section: 'Passive Voice: Past Simple',
-    prompt: 'Choose the correct passive form: "The students answered the questions."',
-    options: [
-      'The questions were answered by the students.',
-      'The questions answered the students.',
-      'The questions was answered by the students.',
-      'The questions are answered by the students.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV18', section: 'Passive Voice: Past Simple',
-    prompt: 'Choose the correct passive form: "The manager cancelled the meeting."',
-    options: [
-      'The meeting was cancelled by the manager.',
-      'The meeting cancelled the manager.',
-      'The meeting is cancelled by the manager.',
-      'The meeting was cancelling by the manager.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV19', section: 'Passive Voice: Past Simple',
-    prompt: 'Choose the correct passive form: "They did not invite Sara."',
-    options: [
-      'Sara was not invited.',
-      'Sara did not invited.',
-      'Sara is not invited.',
-      'Sara was not invite.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV20', section: 'Passive Voice: Past Simple',
-    prompt: 'Choose the correct passive question: "Did they finish the project?"',
-    options: [
-      'Was the project finished?',
-      'Did the project finished?',
-      'Is the project finished?',
-      'Was the project finish?'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-
-  // Future and modals
-  {
-    id: 'PV21', section: 'Passive Voice: Future',
-    prompt: 'Choose the correct passive form: "They will announce the results tomorrow."',
-    options: [
-      'The results will be announced tomorrow.',
-      'The results will announce tomorrow.',
-      'The results are announced tomorrow.',
-      'The results will be announce tomorrow.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV22', section: 'Passive Voice: Future',
-    prompt: 'Choose the correct passive form: "The school will organize a trip."',
-    options: [
-      'A trip will be organized by the school.',
-      'A trip will organize the school.',
-      'A trip is organized by the school.',
-      'A trip will be organize by the school.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV23', section: 'Passive Voice: Modals',
-    prompt: 'Choose the correct passive form: "You must wear a helmet."',
-    options: [
-      'A helmet must be worn.',
-      'A helmet must wear.',
-      'A helmet must be wore.',
-      'A helmet is must worn.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV24', section: 'Passive Voice: Modals',
-    prompt: 'Choose the correct passive form: "Students should submit homework on time."',
-    options: [
-      'Homework should be submitted on time.',
-      'Homework should submit on time.',
-      'Homework should be submit on time.',
-      'Homework is should submitted on time.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV25', section: 'Passive Voice: Modals',
-    prompt: 'Choose the correct passive form: "We can solve this problem."',
-    options: [
-      'This problem can be solved.',
-      'This problem can solve.',
-      'This problem is can solved.',
-      'This problem can be solve.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV26', section: 'Passive Voice: Modals',
-    prompt: 'Choose the correct passive form: "They may postpone the match."',
-    options: [
-      'The match may be postponed.',
-      'The match may postpone.',
-      'The match may be postpone.',
-      'The match is may postponed.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV27', section: 'Passive Voice: Future',
-    prompt: 'Choose the correct passive form: "Nobody will forget this lesson."',
-    options: [
-      'This lesson will not be forgotten.',
-      'This lesson will not forget.',
-      'This lesson is not forgotten.',
-      'This lesson will be not forget.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV28', section: 'Passive Voice: Going To',
-    prompt: 'Choose the correct passive form: "The mechanic is going to fix the bus."',
-    options: [
-      'The bus is going to be fixed by the mechanic.',
-      'The bus is going to fix by the mechanic.',
-      'The bus was going to be fixed by the mechanic.',
-      'The bus is going to be fix by the mechanic.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV29', section: 'Passive Voice: Have To',
-    prompt: 'Choose the correct passive form: "They have to clean the lab."',
-    options: [
-      'The lab has to be cleaned.',
-      'The lab has to clean.',
-      'The lab have to be cleaned.',
-      'The lab has to be clean.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV30', section: 'Passive Voice: Modals',
-    prompt: 'Choose the correct passive question: "Can they repair the computer?"',
-    options: [
-      'Can the computer be repaired?',
-      'Can the computer repair?',
-      'Is the computer can repaired?',
-      'Can the computer be repair?'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-
-  // Perfect and continuous passives
-  {
-    id: 'PV31', section: 'Passive Voice: Present Perfect',
-    prompt: 'Choose the correct passive form: "They have sent the email."',
-    options: [
-      'The email has been sent.',
-      'The email has sent.',
-      'The email was sent.',
-      'The email has been send.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV32', section: 'Passive Voice: Present Perfect',
-    prompt: 'Choose the correct passive form: "Someone has broken the window."',
-    options: [
-      'The window has been broken.',
-      'The window has broken.',
-      'The window was been broken.',
-      'The window has been broke.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV33', section: 'Passive Voice: Present Perfect',
-    prompt: 'Choose the correct passive form: "We have already discussed the topic."',
-    options: [
-      'The topic has already been discussed.',
-      'The topic has already discussed.',
-      'The topic was already discussed.',
-      'The topic has already been discuss.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV34', section: 'Passive Voice: Present Perfect',
-    prompt: 'Choose the correct passive form: "They have not painted the wall yet."',
-    options: [
-      'The wall has not been painted yet.',
-      'The wall has not painted yet.',
-      'The wall was not painted yet.',
-      'The wall has not been paint yet.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV35', section: 'Passive Voice: Present Perfect',
-    prompt: 'Choose the correct passive question: "Has the teacher corrected the tests?"',
-    options: [
-      'Have the tests been corrected by the teacher?',
-      'Have the tests corrected by the teacher?',
-      'Were the tests been corrected by the teacher?',
-      'Have the tests been correct by the teacher?'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV36', section: 'Passive Voice: Past Perfect',
-    prompt: 'Choose the correct passive form: "They had finished the work before sunset."',
-    options: [
-      'The work had been finished before sunset.',
-      'The work had finished before sunset.',
-      'The work was been finished before sunset.',
-      'The work had been finish before sunset.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV37', section: 'Passive Voice: Past Perfect',
-    prompt: 'Choose the correct passive form: "Someone had locked the door."',
-    options: [
-      'The door had been locked.',
-      'The door had locked.',
-      'The door was been locked.',
-      'The door had been lock.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV38', section: 'Passive Voice: Present Continuous',
-    prompt: 'Choose the correct passive form: "They are building a new library."',
-    options: [
-      'A new library is being built.',
-      'A new library is building.',
-      'A new library was being built.',
-      'A new library is being build.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV39', section: 'Passive Voice: Present Continuous',
-    prompt: 'Choose the correct passive form: "The nurse is helping the patient."',
-    options: [
-      'The patient is being helped by the nurse.',
-      'The patient is helping by the nurse.',
-      'The patient was being helped by the nurse.',
-      'The patient is being help by the nurse.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV40', section: 'Passive Voice: Past Continuous',
-    prompt: 'Choose the correct passive form: "They were interviewing the actor."',
-    options: [
-      'The actor was being interviewed.',
-      'The actor was interviewing.',
-      'The actor is being interviewed.',
-      'The actor was being interview.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-
-  // Mixed passive voice practice
-  {
-    id: 'PV41', section: 'Passive Voice: Mixed Practice',
-    prompt: 'Choose the correct passive form: "The children broke the vase."',
-    options: [
-      'The vase was broken by the children.',
-      'The vase broke the children.',
-      'The vase is broken by the children.',
-      'The vase was broke by the children.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV42', section: 'Passive Voice: Mixed Practice',
-    prompt: 'Complete the sentence: "The letter __________ yesterday."',
-    options: [
-      'was sent',
-      'is sent',
-      'sent',
-      'was send'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV43', section: 'Passive Voice: Mixed Practice',
-    prompt: 'Complete the sentence: "Arabic __________ in many countries."',
-    options: [
-      'is spoken',
-      'speaks',
-      'was spoken',
-      'is speaking'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV44', section: 'Passive Voice: Mixed Practice',
-    prompt: 'Choose the correct passive form: "They make cars in this factory."',
-    options: [
-      'Cars are made in this factory.',
-      'Cars make in this factory.',
-      'Cars were made in this factory.',
-      'Cars are make in this factory.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV45', section: 'Passive Voice: Mixed Practice',
-    prompt: 'Choose the active sentence for: "My room is cleaned every Friday."',
-    options: [
-      'Someone cleans my room every Friday.',
-      'Someone cleaned my room every Friday.',
-      'My room cleans someone every Friday.',
-      'Someone is cleaning my room every Friday.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV46', section: 'Passive Voice: Mixed Practice',
-    prompt: 'Choose the correct passive question: "Do they grow oranges here?"',
-    options: [
-      'Are oranges grown here?',
-      'Do oranges grow here by them?',
-      'Were oranges grown here?',
-      'Are oranges grow here?'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV47', section: 'Passive Voice: Mixed Practice',
-    prompt: 'Choose the correct passive question: "Who wrote this poem?"',
-    options: [
-      'Who was this poem written by?',
-      'Who this poem was written by?',
-      'Who is this poem written by?',
-      'Who was this poem wrote by?'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV48', section: 'Passive Voice: Mixed Practice',
-    prompt: 'Complete the sentence: "The report must __________ before Monday."',
-    options: [
-      'be finished',
-      'finish',
-      'be finish',
-      'finished'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV49', section: 'Passive Voice: Mixed Practice',
-    prompt: 'Complete the sentence: "The tickets __________ by my uncle last week."',
-    options: [
-      'were bought',
-      'are bought',
-      'bought',
-      'were buy'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  },
-  {
-    id: 'PV50', section: 'Passive Voice: Mixed Practice',
-    prompt: 'Which sentence is in the passive voice?',
-    options: [
-      'The meal was cooked by my mother.',
-      'My mother cooked the meal.',
-      'My mother is cooking the meal.',
-      'My mother cooks dinner every day.'
-    ],
-    correctIndex: 0, timeLimit: STANDARD_TIME
-  }
+const passiveVoiceItems = [
+  ['The postman delivers the letters every morning.', 'The letters ___ every morning.', ['deliver', 'are delivered', 'delivered', 'were deliver'], 1],
+  ['Someone broke the window yesterday.', 'The window ___ yesterday.', ['is broken', 'breaks', 'was broken', 'broken'], 2],
+  ['People speak English in many countries.', 'English ___ in many countries.', ['speaks', 'is spoken', 'spoke', 'was speak'], 1],
+  ['My sister made the cake last night.', 'The cake ___ by my sister last night.', ['made', 'is made', 'was made', 'makes'], 2],
+  ['Workers make these cars in Germany.', 'These cars ___ in Germany.', ['are made', 'made', 'was made', 'make'], 0],
+  ['Someone cleans the room every day.', 'The room ___ every day.', ['cleans', 'is cleaned', 'cleaned', 'was clean'], 1],
+  ['They finished the report last week.', 'The report ___ last week.', ['is finished', 'finished', 'was finished', 'finishes'], 2],
+  ['They keep the books on the shelf.', 'The books ___ on the shelf.', ['are kept', 'keeps', 'was kept', 'kept'], 0],
+  ['They built the house in 1990.', 'The house ___ in 1990.', ['is built', 'built', 'was built', 'build'], 2],
+  ['Farmers grow coffee in Brazil.', 'Coffee ___ in Brazil.', ['grows', 'is grown', 'was grow', 'grew'], 1],
+  ['The manager sent the emails yesterday.', 'The emails ___ by the manager yesterday.', ['are sent', 'sent', 'were sent', 'sends'], 2],
+  ['Many people love this song.', 'This song ___ by many people.', ['loves', 'is loved', 'loved', 'was love'], 1],
+  ['Someone closed the door at 8 p.m. last night.', 'The door ___ at 8 p.m. last night.', ['is closed', 'closes', 'was closed', 'closed'], 2],
+  ['The teacher tests the students every Monday.', 'The students ___ by the teacher every Monday.', ['test', 'are tested', 'was tested', 'tested'], 1],
+  ['Workers repaired the old bridge in 2015.', 'The old bridge ___ in 2015.', ['repaired', 'is repaired', 'was repaired', 'repairs'], 2],
+  ['They wash the floors twice a week.', 'The floors ___ twice a week.', ['are washed', 'washed', 'was washed', 'washes'], 0],
+  ['Picasso painted the picture.', 'The picture ___ by Picasso.', ['painted', 'is painted', 'was painted', 'paints'], 2],
+  ['People speak many languages in India.', 'Many languages ___ in India.', ['are spoken', 'speaks', 'was spoken', 'spoke'], 0],
+  ['The police caught the thief yesterday.', 'The thief ___ by the police yesterday.', ['catches', 'is caught', 'was caught', 'caught'], 2],
+  ['The students do the homework every day.', 'The homework ___ by the students every day.', ['does', 'is done', 'was do', 'did'], 1],
+  ['They moved the chairs after the meeting.', 'The chairs ___ after the meeting.', ['were moved', 'are move', 'moved', 'moves'], 0],
+  ['Someone delivers the newspaper every morning.', 'The newspaper ___ every morning.', ['is delivered', 'delivered', 'was deliver', 'delivers'], 0],
+  ['Thousands of tourists visited the museum last year.', 'The museum ___ by thousands of tourists last year.', ['visits', 'is visited', 'was visited', 'visited'], 2],
+  ['People turn on the lights at night.', 'The lights ___ at night.', ['turn on', 'are turned on', 'was turned on', 'turned'], 1],
+  ['They sent the invitation two days ago.', 'The invitation ___ two days ago.', ['sends', 'is sent', 'was sent', 'send'], 2],
+  ['Someone cleans the classroom before the lesson.', 'The classroom ___ before the lesson.', ['is cleaned', 'cleans', 'was clean', 'cleaning'], 0],
+  ['A technician fixed the computer yesterday.', 'The computer ___ yesterday.', ['fixed', 'is fixed', 'was fixed', 'fixes'], 2],
+  ['Designers design these shoes in Italy.', 'These shoes ___ in Italy.', ['are designed', 'designed', 'was designed', 'designs'], 0],
+  ['They cancelled the match because of the rain.', 'The match ___ because of the rain.', ['cancelled', 'is cancel', 'was cancelled', 'cancels'], 2],
+  ['They wash the dishes after dinner.', 'The dishes ___ after dinner.', ['are washed', 'washes', 'was washed', 'washing'], 0],
+  ['The assistant made the mistake yesterday.', 'The mistake ___ by the assistant yesterday.', ['made', 'is made', 'was made', 'makes'], 2],
+  ['Someone opens the shop at 9 a.m. every day.', 'The shop ___ at 9 a.m. every day.', ['opens', 'is opened', 'was open', 'opened'], 1],
+  ['Gardeners water the trees every summer.', 'The trees ___ every summer.', ['water', 'are watered', 'was watered', 'watered'], 1],
+  ['Alexander Graham Bell invented the phone in 1876.', 'The phone ___ in 1876.', ['invented', 'is invented', 'was invented', 'invents'], 2],
+  ['I received the message five minutes ago.', 'The message ___ five minutes ago.', ['received', 'is received', 'was received', 'receives'], 2],
+  ['They clean the windows every Friday.', 'The windows ___ every Friday.', ['are cleaned', 'cleaned', 'was cleaned', 'cleans'], 0],
+  ['Tourists visit the city every year.', 'The city ___ by tourists every year.', ['visits', 'is visited', 'was visit', 'visited'], 1],
+  ['She wrote the letter by hand yesterday.', 'The letter ___ by hand yesterday.', ['writes', 'is written', 'was written', 'wrote'], 2],
+  ['The chef prepares the food in the kitchen.', 'The food ___ in the kitchen.', ['prepares', 'is prepared', 'was prepare', 'prepared'], 1],
+  ['The porter carried the bags last night.', 'The bags ___ by the porter last night.', ['carried', 'are carried', 'were carried', 'carries'], 2],
+  ['Everyone follows the rules.', 'The rules ___ by everyone.', ['follow', 'are followed', 'was followed', 'followed'], 1],
+  ['They solved the problem quickly yesterday.', 'The problem ___ quickly yesterday.', ['solved', 'is solved', 'was solved', 'solves'], 2],
+  ['People buy the tickets online.', 'The tickets ___ online.', ['buy', 'are bought', 'was bought', 'bought'], 1],
+  ['They painted the wall last month.', 'The wall ___ last month.', ['paints', 'is painted', 'was painted', 'paint'], 2],
+  ['They store the documents in a safe place.', 'The documents ___ in a safe place.', ['are stored', 'stored', 'was stored', 'stores'], 0],
+  ['My father washed the car yesterday.', 'The car ___ by my father yesterday.', ['washed', 'is washed', 'was washed', 'washes'], 2],
+  ['The teacher asks the questions.', 'The questions ___ by the teacher.', ['asks', 'are asked', 'was asked', 'asked'], 1],
+  ['They opened the school in 1985.', 'The school ___ in 1985.', ['opened', 'is opened', 'was opened', 'opens'], 2],
+  ['They make the beds every morning.', 'The beds ___ every morning.', ['make', 'are made', 'was made', 'made'], 1],
+  ['A famous writer writes the story.', 'The story ___ by a famous writer.', ['wrote', 'is written', 'was write', 'writes'], 1]
 ];
+
+const questionsRaw = passiveVoiceItems.map(([active, question, options, correctIndex], index) => ({
+  id: `PV${String(index + 1).padStart(2, '0')}`,
+  section: 'Passive Voice Quiz',
+  prompt: `Active: ${active} ${question}`,
+  options,
+  correctIndex,
+  timeLimit: STANDARD_TIME
+}));
 
 const POINTS_PER_QUESTION = TOTAL_SCORE / QUIZ_QUESTION_COUNT;
 
