@@ -1,7 +1,7 @@
 {
   "name": "1bac-passive-voice-quiz",
   "version": "1.0.0",
-  "description": "Scheduled passive voice quiz platform for 1 BAC students",
+  "description": "Live passive voice quiz platform for 1 BAC students",
   "main": "server-1bac.js",
   "scripts": {
     "start": "node server-1bac.js",

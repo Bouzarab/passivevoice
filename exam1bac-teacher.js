@@ -343,9 +343,9 @@ function applyTeacherState(state) {
   const startBtn = document.getElementById('start-btn');
   if (startBtn) {
     startBtn.disabled = true;
-    if (state.windowStatus?.state === 'open') startBtn.textContent = 'Window Open';
+    if (state.windowStatus?.state === 'open') startBtn.textContent = 'Quiz Open';
     else if (state.windowStatus?.state === 'closed') startBtn.textContent = 'Window Closed';
-    else startBtn.textContent = 'Opens Automatically';
+    else startBtn.textContent = 'Not Open Yet';
   }
 
   renderPlayerList('lobby-student-list', players, 'active');

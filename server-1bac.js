@@ -21,18 +21,9 @@ const TOTAL_SCORE = 5;
 const QUIZ_QUESTION_COUNT = 10;
 const STANDARD_TIME = 90;
 const DISCONNECT_GRACE_MS = 30000;
+const SESSION_TIME_LIMIT_SECONDS = Number(process.env.QUIZ_SESSION_SECONDS) || 1800;
 
 const VALID_CLASSES = ['1BACSH2', '1BACSE3', '1BACSE4'];
-const QUIZ_TIME_ZONE = 'Africa/Casablanca';
-const QUIZ_WINDOW = {
-  year: 2026,
-  month: 6,
-  day: 8,
-  startHour: 17,
-  startMinute: 0,
-  endHour: 17,
-  endMinute: 30
-};
 
 app.use((req, res, next) => {
   if (/\.(?:html|css|js)$/i.test(req.path)) {
@@ -258,84 +249,15 @@ function shuffleQuestionOptions(question) {
   return { ...question, options: shuffledOptions, correctIndex: newCorrectIndex };
 }
 
-function pad2(value) {
-  return String(value).padStart(2, '0');
-}
-
-function getQuizWindowDateKey() {
-  return `${QUIZ_WINDOW.year}-${pad2(QUIZ_WINDOW.month)}-${pad2(QUIZ_WINDOW.day)}`;
-}
-
-function getZonedDateTimeParts(date = new Date()) {
-  const formatter = new Intl.DateTimeFormat('en-GB', {
-    timeZone: QUIZ_TIME_ZONE,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hourCycle: 'h23'
-  });
-  const parts = Object.fromEntries(formatter.formatToParts(date).map(part => [part.type, part.value]));
-  const year = Number(parts.year);
-  const month = Number(parts.month);
-  const day = Number(parts.day);
-  const hour = Number(parts.hour);
-  const minute = Number(parts.minute);
-  const second = Number(parts.second);
-
+function getQuizWindowStatus() {
+  const remainingSeconds = Number(process.env.QUIZ_TEST_REMAINING_SECONDS) || SESSION_TIME_LIMIT_SECONDS;
+  const message = process.env.QUIZ_TEST_MODE === 'open'
+    ? `Test mode: the quiz is open for ${Math.round(remainingSeconds / 60)} minutes.`
+    : 'The quiz is open. Students can start when they receive the link.';
   return {
-    year,
-    month,
-    day,
-    hour,
-    minute,
-    second,
-    dateKey: `${year}-${pad2(month)}-${pad2(day)}`
-  };
-}
-
-function quizWindowLabel() {
-  return 'Monday, June 8, 2026 from 17:00 to 17:30';
-}
-
-function getQuizWindowStatus(date = new Date()) {
-  if (process.env.QUIZ_TEST_MODE === 'open') {
-    const remainingSeconds = Number(process.env.QUIZ_TEST_REMAINING_SECONDS) || 1800;
-    return {
-      state: 'open',
-      remainingSeconds,
-      message: `Test mode: the quiz is open for ${Math.round(remainingSeconds / 60)} minutes.`
-    };
-  }
-
-  const now = getZonedDateTimeParts(date);
-  const targetDateKey = getQuizWindowDateKey();
-  const startSeconds = (QUIZ_WINDOW.startHour * 60 + QUIZ_WINDOW.startMinute) * 60;
-  const endSeconds = (QUIZ_WINDOW.endHour * 60 + QUIZ_WINDOW.endMinute) * 60;
-  const nowSeconds = (now.hour * 60 + now.minute) * 60 + now.second;
-
-  if (now.dateKey < targetDateKey || (now.dateKey === targetDateKey && nowSeconds < startSeconds)) {
-    return {
-      state: 'upcoming',
-      remainingSeconds: 0,
-      message: `The quiz opens on ${quizWindowLabel()} (${QUIZ_TIME_ZONE}).`
-    };
-  }
-
-  if (now.dateKey === targetDateKey && nowSeconds < endSeconds) {
-    return {
-      state: 'open',
-      remainingSeconds: Math.max(0, endSeconds - nowSeconds),
-      message: `The quiz is open until 17:30 (${QUIZ_TIME_ZONE}).`
-    };
-  }
-
-  return {
-    state: 'closed',
-    remainingSeconds: 0,
-    message: `The quiz window closed on ${quizWindowLabel()} (${QUIZ_TIME_ZONE}).`
+    state: 'open',
+    remainingSeconds,
+    message
   };
 }
 
@@ -348,7 +270,10 @@ function buildStudentQuestionSet() {
 function getSessionTimeRemaining(player) {
   if (!player || player.quizStatus === 'finished') return 0;
   const windowStatus = getQuizWindowStatus();
-  return windowStatus.state === 'open' ? windowStatus.remainingSeconds : 0;
+  if (windowStatus.state !== 'open') return 0;
+  const startedAt = player.startedAt || player.joinedAt || Date.now();
+  const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+  return Math.max(0, windowStatus.remainingSeconds - elapsed);
 }
 
 function questionForSlot(question, slotIndex, player) {
@@ -395,7 +320,7 @@ function teacherSlotQuestion() {
     id: 'open-session',
     number: 1,
     total: QUIZ_QUESTION_COUNT,
-    section: 'Scheduled Passive Voice Quiz',
+    section: 'Live Passive Voice Quiz',
     prompt: windowStatus.state === 'open'
       ? `The quiz is open. Each student receives 10 random questions from a ${questions.length}-question passive voice bank.`
       : windowStatus.message,
@@ -844,7 +769,7 @@ io.on('connection', (socket) => {
 
   socket.on('teacher:start', safe(() => {
     socket.emit('teacher:notice', {
-      message: `This quiz opens automatically on ${quizWindowLabel()} (${QUIZ_TIME_ZONE}). Students start their own 10-question set when they join during that window.`
+      message: 'Students start their own 10-question set as soon as they open the student page.'
     });
   }));
 
@@ -855,13 +780,13 @@ io.on('connection', (socket) => {
 
   socket.on('teacher:moveNext', safe(() => {
     socket.emit('teacher:notice', {
-      message: 'Students advance independently in this scheduled quiz.'
+      message: 'Students advance independently in this quiz.'
     });
   }));
 
   socket.on('teacher:movePrevious', safe(() => {
     socket.emit('teacher:notice', {
-      message: 'Students advance independently in this scheduled quiz.'
+      message: 'Students advance independently in this quiz.'
     });
   }));
 
@@ -1096,7 +1021,7 @@ io.on('connection', (socket) => {
 // ─── Start ────────────────────────────────────────────────────────────────────
 server.listen(PORT, HOST, () => {
   console.log(`${QUIZ_TITLE} -> ${HOST}:${PORT}`);
-  console.log(`  Window: ${quizWindowLabel()} (${QUIZ_TIME_ZONE})`);
+  console.log(`  Mode: open (${Math.round(SESSION_TIME_LIMIT_SECONDS / 60)} minutes per student)`);
   console.log('  Teacher: /teacher');
   console.log('  Student: /student');
 });
